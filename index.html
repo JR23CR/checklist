@@ -197,7 +197,6 @@
         const fardosListEl = document.getElementById('fardos-list');
         const cameraContainer = document.getElementById('camera-container');
         const noCameraFoundEl = document.getElementById('no-camera-found');
-        const barcodeDetectedMsg = document.querySelector('.barcode-detected-msg');
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -311,38 +310,84 @@
             }
         }
 
+        // Variables para evitar detecciones repetidas muy rápidas
+        let lastDetectedCode = null;
+        let lastDetectedTime = 0;
+
+        Quagga.onProcessed(function(result) {
+            const drawingCtx = Quagga.canvas.ctx.overlay;
+            const drawingCanvas = Quagga.canvas.dom.overlay;
+
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+            if (result) {
+                if (result.boxes) {
+                    result.boxes
+                        .filter(box => box !== result.box)
+                        .forEach(box => {
+                            drawingCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                            drawingCtx.lineWidth = 1;
+                            drawingCtx.beginPath();
+                            box.forEach((point, index) => {
+                                if (index === 0) {
+                                    drawingCtx.moveTo(point[0], point[1]);
+                                } else {
+                                    drawingCtx.lineTo(point[0], point[1]);
+                                }
+                            });
+                            drawingCtx.closePath();
+                            drawingCtx.stroke();
+                        });
+                }
+
+                if (result.box) {
+                    drawingCtx.lineWidth = 3;
+                    drawingCtx.strokeStyle = 'rgb(40, 167, 69)'; // verde
+                    drawingCtx.beginPath();
+                    result.box.forEach((point, index) => {
+                        if (index === 0) {
+                            drawingCtx.moveTo(point[0], point[1]);
+                        } else {
+                            drawingCtx.lineTo(point[0], point[1]);
+                        }
+                    });
+                    drawingCtx.closePath();
+                    drawingCtx.stroke();
+                }
+            }
+        });
+
         Quagga.onDetected(function(result) {
             const code = result.codeResult.code;
+            const now = Date.now();
+
+            // Evitar procesar el mismo código repetidamente en poco tiempo
+            if (code === lastDetectedCode && (now - lastDetectedTime) < 1500) {
+                return;
+            }
+            lastDetectedCode = code;
+            lastDetectedTime = now;
+
             const fardoEncontrado = fardos.find(f => f.paquete === code);
-            
+
             if (fardoEncontrado && !fardoEncontrado.revisado) {
                 fardoEncontrado.revisado = true;
                 actualizarUI();
-                
-                // Mostrar mensaje y sonido
-                playBeepSound();
-                
-                const barcodeDetectedMsg = document.createElement('div');
-                barcodeDetectedMsg.className = 'barcode-detected-msg';
-                barcodeDetectedMsg.textContent = 'Fardo Escaneado! ✅';
-                cameraContainer.appendChild(barcodeDetectedMsg);
 
-                // Dibujar el recuadro verde
-                const drawingCanvas = Quagga.canvas.ctx.canvas;
-                const canvasCtx = drawingCanvas.getContext("2d");
-                
-                canvasCtx.lineWidth = 4;
-                canvasCtx.strokeStyle = "rgb(40, 167, 69)";
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(result.box[0][0], result.box[0][1]);
-                for (let i = 1; i < result.box.length; i++) {
-                    canvasCtx.lineTo(result.box[i][0], result.box[i][1]);
+                playBeepSound();
+
+                // Mostrar mensaje temporal
+                let barcodeDetectedMsg = document.querySelector('.barcode-detected-msg');
+                if (!barcodeDetectedMsg) {
+                    barcodeDetectedMsg = document.createElement('div');
+                    barcodeDetectedMsg.className = 'barcode-detected-msg';
+                    cameraContainer.appendChild(barcodeDetectedMsg);
                 }
-                canvasCtx.lineTo(result.box[0][0], result.box[0][1]);
-                canvasCtx.stroke();
-                
+                barcodeDetectedMsg.textContent = 'Fardo Escaneado! ✅';
+                barcodeDetectedMsg.style.display = 'block';
+
                 setTimeout(() => {
-                    barcodeDetectedMsg.remove();
+                    barcodeDetectedMsg.style.display = 'none';
                 }, 1000);
             }
         });
