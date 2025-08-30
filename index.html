@@ -165,9 +165,12 @@
         </div>
 
         <div id="camera-container">
-            <video id="camera-feed" autoplay="true" playsinline="true"></video>
+            <video id="camera-feed" autoplay="true" playsinline="true" style="display: none;"></video>
             <div id="detection-line"></div>
             <div class="barcode-detected-msg" id="barcode-detected-msg">Fardo Escaneado! ✅</div>
+            <div id="no-camera-found" style="text-align:center; padding: 20px; display: none;">
+                No se encontró cámara. Por favor, asegúrate de haber dado los permisos necesarios.
+            </div>
         </div>
 
         <div id="fardos-list-container">
@@ -177,7 +180,6 @@
     </div>
 
     <script>
-        let excelData = null;
         let fardos = [];
         let isQuaggaStarted = false;
 
@@ -190,6 +192,7 @@
         const barcodeDetectedMsg = document.getElementById('barcode-detected-msg');
         const detectionLine = document.getElementById('detection-line');
         const videoElement = document.getElementById('camera-feed');
+        const noCameraFoundEl = document.getElementById('no-camera-found');
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -208,12 +211,32 @@
             reader.readAsArrayBuffer(file);
         });
 
-        startButton.addEventListener('click', function() {
+        startButton.addEventListener('click', async function() {
             if (!isQuaggaStarted) {
-                iniciarEscaneo();
-                isQuaggaStarted = true;
-                startButton.textContent = "Escáner Activado";
-                startButton.disabled = true;
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: "environment"
+                        }
+                    });
+                    videoElement.srcObject = stream;
+                    videoElement.style.display = 'block';
+                    noCameraFoundEl.style.display = 'none';
+
+                    videoElement.onloadedmetadata = () => {
+                        videoElement.play();
+                        iniciarEscaneo();
+                    };
+
+                    isQuaggaStarted = true;
+                    startButton.textContent = "Escáner Activado";
+                    startButton.disabled = true;
+
+                } catch (err) {
+                    console.error("Error al acceder a la cámara:", err);
+                    noCameraFoundEl.style.display = 'block';
+                    startButton.disabled = false;
+                }
             }
         });
 
@@ -277,12 +300,7 @@
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: videoElement,
-                    constraints: {
-                        width: { min: 640 },
-                        height: { min: 480 },
-                        facingMode: "environment"
-                    },
+                    target: videoElement
                 },
                 decoder: {
                     readers: ["code_128_reader"]
@@ -295,7 +313,6 @@
             }, function(err) {
                 if (err) {
                     console.error("Error al iniciar Quagga:", err);
-                    alert("Error al iniciar la cámara. Asegúrese de que su dispositivo tiene una cámara y de que le ha dado los permisos necesarios.");
                     return;
                 }
                 console.log("QuaggaJS inicializado. ¡Listo para escanear!");
