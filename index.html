@@ -189,6 +189,7 @@
     <script>
         let fardos = [];
         let isQuaggaStarted = false;
+        let beepAudio; // Variable para el objeto de audio
 
         const fileInput = document.getElementById('fileInput');
         const startButton = document.getElementById('start-button');
@@ -219,6 +220,10 @@
 
         startButton.addEventListener('click', function() {
             if (!isQuaggaStarted) {
+                // Pre-carga el audio al hacer clic en el botón
+                beepAudio = new Audio('store-scanner-beep-90395.mp3');
+                beepAudio.volume = 0.5; // Ajusta el volumen si es necesario
+
                 Quagga.init({
                     inputStream: {
                         name: "Live",
@@ -300,11 +305,12 @@
             });
         }
         
-        // Función para reproducir el sonido desde el archivo MP3
         function playBeepSound() {
-            const audio = new Audio('http://googleusercontent.com/file_content/1');
-            audio.play()
-                .catch(e => console.error("Error al reproducir el sonido:", e));
+            if (beepAudio) {
+                // Reinicia el sonido para que se pueda reproducir varias veces
+                beepAudio.currentTime = 0;
+                beepAudio.play().catch(e => console.error("Error al reproducir el sonido:", e));
+            }
         }
 
         Quagga.onDetected(function(result) {
