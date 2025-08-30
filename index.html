@@ -72,17 +72,23 @@
             overflow: hidden;
             background-color: #000;
         }
-        #camera-feed, #scan-canvas {
+        #camera-feed, .drawingBuffer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Asegura que el video llene el contenedor */
-            display: block;
+            object-fit: cover;
         }
-        #scan-canvas {
-            z-index: 10; /* Para que la línea roja esté sobre el video */
+        .drawingBuffer {
+            z-index: 10;
+        }
+        #detection-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: red;
+            z-index: 15;
             display: none;
         }
 
@@ -152,7 +158,7 @@
 
         <div id="camera-container">
             <video id="camera-feed" autoplay="true" preload="auto" src="" muted="true" playsinline="true"></video>
-            <canvas id="scan-canvas"></canvas>
+            <div id="detection-line"></div>
             <div class="barcode-detected-msg" id="barcode-detected-msg">Fardo Escaneado! ✅</div>
         </div>
 
@@ -173,8 +179,7 @@
         const pendientesFardosEl = document.querySelector('#fardos-pendientes .count');
         const fardosListEl = document.getElementById('fardos-list');
         const barcodeDetectedMsg = document.getElementById('barcode-detected-msg');
-        const scanCanvas = document.getElementById('scan-canvas');
-        const canvasCtx = scanCanvas.getContext('2d');
+        const detectionLine = document.getElementById('detection-line');
         const videoElement = document.getElementById('camera-feed');
 
         fileInput.addEventListener('change', function(e) {
@@ -210,9 +215,6 @@
             if (!isQuaggaStarted) {
                 iniciarEscaneo();
                 isQuaggaStarted = true;
-            } else {
-                 Quagga.stop();
-                 iniciarEscaneo();
             }
             actualizarUI();
         }
@@ -237,7 +239,6 @@
             });
         }
         
-        // Función para reproducir el sonido de "beep"
         function playBeepSound() {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) return;
@@ -276,28 +277,17 @@
                     patchSize: "medium",
                     halfSample: true
                 },
-                locate: true // Asegura que el localizador esté activo
+                locate: true
             }, function(err) {
                 if (err) {
                     console.error("Error al iniciar Quagga:", err);
-                    alert("Error al iniciar la cámara. Asegúrese de tener una cámara conectada y de dar los permisos necesarios.");
+                    alert("Error al iniciar la cámara. Asegúrese de que su dispositivo tiene una cámara y de que le ha dado los permisos necesarios.");
                     return;
                 }
                 console.log("QuaggaJS inicializado. ¡Listo para escanear!");
                 Quagga.start();
             });
-
-            // Detectar y dibujar la línea roja
-            Quagga.onProcessed(function(result) {
-                const drawingCanvas = Quagga.canvas.dom.overlay;
-                canvasCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-                if (result) {
-                    if (result.box) {
-                        Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCanvas, { color: "red", lineWidth: 5 });
-                    }
-                }
-            });
-
+            
             Quagga.onDetected(function(result) {
                 const code = result.codeResult.code;
                 const fardoEncontrado = fardos.find(f => f.paquete === code);
@@ -309,16 +299,21 @@
                     // Mostrar mensaje y sonido
                     playBeepSound();
                     barcodeDetectedMsg.style.display = 'block';
-                    setTimeout(() => {
-                        barcodeDetectedMsg.style.display = 'none';
-                    }, 1000);
 
                     // Dibujar la línea de éxito
-                    const drawingCanvas = Quagga.canvas.dom.overlay;
-                    const canvasCtx = drawingCanvas.getContext('2d');
-                    canvasCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-                    const line = result.line || [];
-                    Quagga.ImageDebug.drawPath(line, { x: 'x', y: 'y' }, drawingCanvas, { color: "red", lineWidth: 3 });
+                    if (result.box) {
+                        const box = result.box;
+                        const videoRect = videoElement.getBoundingClientRect();
+                        const lineY = (box.y2 + box.y1) / 2;
+                        
+                        detectionLine.style.top = `${lineY}px`;
+                        detectionLine.style.display = 'block';
+
+                        setTimeout(() => {
+                            barcodeDetectedMsg.style.display = 'none';
+                            detectionLine.style.display = 'none';
+                        }, 1000);
+                    }
                 }
             });
         }
