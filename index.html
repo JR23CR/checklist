@@ -67,8 +67,8 @@
         #camera-container {
             position: relative;
             width: 100%;
-            max-width: 95%; /* Hacemos que sea más grande */
-            height: 400px; /* Le damos una altura fija */
+            max-width: 95%;
+            height: 400px;
             margin: auto;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -300,23 +300,11 @@
             });
         }
         
+        // Función para reproducir el sonido desde el archivo MP3
         function playBeepSound() {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const audioContext = new AudioContext();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
-            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.2);
+            const audio = new Audio('http://googleusercontent.com/file_content/1');
+            audio.play()
+                .catch(e => console.error("Error al reproducir el sonido:", e));
         }
 
         Quagga.onDetected(function(result) {
