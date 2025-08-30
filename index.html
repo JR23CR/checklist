@@ -74,17 +74,17 @@
             overflow: hidden;
             background-color: #000;
         }
-        #camera-feed, .drawingBuffer, .laser-line {
+        #camera-feed {
+            width: 100%;
+            display: none;
+        }
+        #camera-container canvas, #camera-container video {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: block;
-        }
-        .drawingBuffer {
-            z-index: 10;
         }
         #detection-line {
             position: absolute;
@@ -183,11 +183,8 @@
         </div>
 
         <div id="camera-container">
-            <video id="camera-feed" autoplay="true" playsinline="true"></video>
-            <div id="detection-line"></div>
-            <div class="barcode-detected-msg" id="barcode-detected-msg">Fardo Escaneado! ✅</div>
-            <div id="no-camera-found" style="text-align:center; padding: 20px; display: none;">
-                No se encontró cámara. Por favor, asegúrate de haber dado los permisos necesarios.
+            <div id="no-camera-found" style="text-align:center; padding: 20px; display: block;">
+                Haz clic en "Iniciar Escáner" para activar la cámara.
             </div>
         </div>
 
@@ -207,9 +204,7 @@
         const revisadosFardosEl = document.querySelector('#fardos-revisados .count');
         const pendientesFardosEl = document.querySelector('#fardos-pendientes .count');
         const fardosListEl = document.getElementById('fardos-list');
-        const barcodeDetectedMsg = document.getElementById('barcode-detected-msg');
-        const detectionLine = document.getElementById('detection-line');
-        const videoElement = document.getElementById('camera-feed');
+        const cameraContainer = document.getElementById('camera-container');
         const noCameraFoundEl = document.getElementById('no-camera-found');
 
         fileInput.addEventListener('change', function(e) {
@@ -232,19 +227,44 @@
         startButton.addEventListener('click', async function() {
             if (!isQuaggaStarted) {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: "environment"
+                    Quagga.init({
+                        inputStream: {
+                            name: "Live",
+                            type: "LiveStream",
+                            target: cameraContainer,
+                            constraints: {
+                                width: { min: 640 },
+                                height: { min: 480 },
+                                facingMode: "environment"
+                            },
+                        },
+                        decoder: {
+                            readers: ["code_128_reader"]
+                        },
+                        locator: {
+                            patchSize: "medium",
+                            halfSample: true
+                        },
+                        locate: true
+                    }, function(err) {
+                        if (err) {
+                            console.error("Error al iniciar Quagga:", err);
+                            noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
+                            noCameraFoundEl.style.display = 'block';
+                            startButton.disabled = false;
+                            return;
                         }
-                    });
-                    videoElement.srcObject = stream;
-                    videoElement.style.display = 'block';
-                    noCameraFoundEl.style.display = 'none';
+                        
+                        noCameraFoundEl.style.display = 'none';
+                        const video = document.querySelector('#camera-container video');
+                        const canvas = document.querySelector('#camera-container canvas');
 
-                    videoElement.onloadedmetadata = () => {
-                        videoElement.play();
-                        iniciarEscaneo();
-                    };
+                        if (video) video.style.display = 'block';
+                        if (canvas) canvas.style.display = 'block';
+
+                        console.log("QuaggaJS inicializado. ¡Listo para escanear!");
+                        Quagga.start();
+                    });
 
                     isQuaggaStarted = true;
                     startButton.textContent = "Escáner Activado";
@@ -252,6 +272,7 @@
 
                 } catch (err) {
                     console.error("Error al acceder a la cámara:", err);
+                    noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
                     noCameraFoundEl.style.display = 'block';
                     startButton.disabled = false;
                 }
@@ -313,59 +334,27 @@
             oscillator.stop(audioContext.currentTime + 0.2);
         }
 
-        function iniciarEscaneo() {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: videoElement
-                },
-                decoder: {
-                    readers: ["code_128_reader"]
-                },
-                locator: {
-                    patchSize: "medium",
-                    halfSample: true
-                },
-                locate: true
-            }, function(err) {
-                if (err) {
-                    console.error("Error al iniciar Quagga:", err);
-                    return;
-                }
-                console.log("QuaggaJS inicializado. ¡Listo para escanear!");
-                Quagga.start();
-            });
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            const fardoEncontrado = fardos.find(f => f.paquete === code);
             
-            Quagga.onDetected(function(result) {
-                const code = result.codeResult.code;
-                const fardoEncontrado = fardos.find(f => f.paquete === code);
+            if (fardoEncontrado && !fardoEncontrado.revisado) {
+                fardoEncontrado.revisado = true;
+                actualizarUI();
                 
-                if (fardoEncontrado && !fardoEncontrado.revisado) {
-                    fardoEncontrado.revisado = true;
-                    actualizarUI();
-                    
-                    // Mostrar mensaje y sonido
-                    playBeepSound();
-                    barcodeDetectedMsg.style.display = 'block';
+                // Mostrar mensaje y sonido
+                playBeepSound();
+                
+                const barcodeDetectedMsg = document.createElement('div');
+                barcodeDetectedMsg.className = 'barcode-detected-msg';
+                barcodeDetectedMsg.textContent = 'Fardo Escaneado! ✅';
+                cameraContainer.appendChild(barcodeDetectedMsg);
 
-                    // Dibujar la línea de éxito
-                    if (result.box) {
-                        const box = result.box;
-                        const videoRect = videoElement.getBoundingClientRect();
-                        const lineY = box.y;
-                        
-                        detectionLine.style.top = `${lineY}px`;
-                        detectionLine.style.display = 'block';
-
-                        setTimeout(() => {
-                            barcodeDetectedMsg.style.display = 'none';
-                            detectionLine.style.display = 'none';
-                        }, 1000);
-                    }
-                }
-            });
-        }
+                setTimeout(() => {
+                    barcodeDetectedMsg.remove();
+                }, 1000);
+            }
+        });
     </script>
 </body>
 </html>
