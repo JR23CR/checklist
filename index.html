@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Checklist de Fardos con Escáner</title>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
 
     <style>
         body {
@@ -58,9 +61,15 @@
             font-size: 1.5em;
             font-weight: bold;
         }
-        #total-fardos .count { color: #007BFF; }
-        #fardos-revisados .count { color: #28a745; }
-        #fardos-pendientes .count { color: #dc3545; }
+        #total-fardos .count {
+            color: #007bff;
+        }
+        #fardos-revisados .count {
+            color: #28a745;
+        }
+        #fardos-pendientes .count {
+            color: #dc3545;
+        }
 
         #camera-container {
             position: relative;
@@ -73,7 +82,8 @@
             overflow: hidden;
             background-color: #000;
         }
-        #camera-container canvas, #camera-container video {
+        #camera-container canvas,
+        #camera-container video {
             position: absolute;
             top: 0;
             left: 0;
@@ -173,7 +183,10 @@
         </div>
 
         <div id="camera-container">
-            <div id="no-camera-found" style="text-align:center; padding: 20px; display: block;">
+            <div
+                id="no-camera-found"
+                style="text-align: center; padding: 20px; display: block"
+            >
                 Haz clic en "Iniciar Escáner" para activar la cámara.
             </div>
         </div>
@@ -187,23 +200,23 @@
     <script>
         let fardos = [];
         let isQuaggaStarted = false;
-        let beepAudio; // Variable para el objeto de audio
+        let beepAudio;
 
-        const fileInput = document.getElementById('fileInput');
-        const startButton = document.getElementById('start-button');
-        const totalFardosEl = document.querySelector('#total-fardos .count');
-        const revisadosFardosEl = document.querySelector('#fardos-revisados .count');
-        const pendientesFardosEl = document.querySelector('#fardos-pendientes .count');
-        const fardosListEl = document.getElementById('fardos-list');
-        const cameraContainer = document.getElementById('camera-container');
-        const noCameraFoundEl = document.getElementById('no-camera-found');
+        const fileInput = document.getElementById("fileInput");
+        const startButton = document.getElementById("start-button");
+        const totalFardosEl = document.querySelector("#total-fardos .count");
+        const revisadosFardosEl = document.querySelector("#fardos-revisados .count");
+        const pendientesFardosEl = document.querySelector("#fardos-pendientes .count");
+        const fardosListEl = document.getElementById("fardos-list");
+        const cameraContainer = document.getElementById("camera-container");
+        const noCameraFoundEl = document.getElementById("no-camera-found");
 
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener("change", function (e) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = function (e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: "array" });
                 const sheet = workbook.Sheets["Packing List"];
                 if (!sheet) {
                     alert("❌ La hoja 'Packing List' no fue encontrada.");
@@ -215,50 +228,53 @@
             reader.readAsArrayBuffer(file);
         });
 
-        startButton.addEventListener('click', function() {
+        startButton.addEventListener("click", function () {
             if (!isQuaggaStarted) {
-                // Pre-carga el audio al hacer clic en el botón
-                beepAudio = new Audio('store-scanner-beep-90395.mp3');
-                beepAudio.volume = 0.5; // Ajusta el volumen si es necesario
+                beepAudio = new Audio("store-scanner-beep-90395.mp3");
+                beepAudio.volume = 0.5;
 
-                Quagga.init({
-                    inputStream: {
-                        name: "Live",
-                        type: "LiveStream",
-                        target: cameraContainer,
-                        constraints: {
-                            width: { min: 640 },
-                            height: { min: 480 },
-                            facingMode: "environment"
+                Quagga.init(
+                    {
+                        inputStream: {
+                            name: "Live",
+                            type: "LiveStream",
+                            target: cameraContainer,
+                            constraints: {
+                                width: { min: 640 },
+                                height: { min: 480 },
+                                facingMode: "environment",
+                            },
                         },
+                        decoder: {
+                            readers: ["code_128_reader"],
+                        },
+                        locator: {
+                            patchSize: "medium",
+                            halfSample: true,
+                        },
+                        locate: true,
                     },
-                    decoder: {
-                        readers: ["code_128_reader"]
-                    },
-                    locator: {
-                        patchSize: "medium",
-                        halfSample: true
-                    },
-                    locate: true
-                }, function(err) {
-                    if (err) {
-                        console.error("Error al iniciar Quagga:", err);
-                        noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
-                        noCameraFoundEl.style.display = 'block';
-                        startButton.disabled = false;
-                        return;
+                    function (err) {
+                        if (err) {
+                            console.error("Error al iniciar Quagga:", err);
+                            noCameraFoundEl.textContent =
+                                "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
+                            noCameraFoundEl.style.display = "block";
+                            startButton.disabled = false;
+                            return;
+                        }
+
+                        noCameraFoundEl.style.display = "none";
+                        const video = document.querySelector("#camera-container video");
+                        const canvas = document.querySelector("#camera-container canvas");
+
+                        if (video) video.style.display = "block";
+                        if (canvas) canvas.style.display = "block";
+
+                        console.log("QuaggaJS inicializado. ¡Listo para escanear!");
+                        Quagga.start();
                     }
-                    
-                    noCameraFoundEl.style.display = 'none';
-                    const video = document.querySelector('#camera-container video');
-                    const canvas = document.querySelector('#camera-container canvas');
-
-                    if (video) video.style.display = 'block';
-                    if (canvas) canvas.style.display = 'block';
-
-                    console.log("QuaggaJS inicializado. ¡Listo para escanear!");
-                    Quagga.start();
-                });
+                );
 
                 isQuaggaStarted = true;
                 startButton.textContent = "Escáner Activado";
@@ -274,47 +290,45 @@
                     fardosUnicos.add(fila[1].toString());
                 }
             }
-            fardos = Array.from(fardosUnicos).map(paquete => ({
+            fardos = Array.from(fardosUnicos).map((paquete) => ({
                 paquete: paquete,
-                revisado: false
+                revisado: false,
             }));
 
             actualizarUI();
         }
 
         function actualizarUI() {
-            const revisados = fardos.filter(f => f.revisado).length;
+            const revisados = fardos.filter((f) => f.revisado).length;
             const pendientes = fardos.length - revisados;
 
             totalFardosEl.textContent = fardos.length;
             revisadosFardosEl.textContent = revisados;
             pendientesFardosEl.textContent = pendientes;
 
-            fardosListEl.innerHTML = '';
-            fardos.forEach(fardo => {
-                const li = document.createElement('li');
-                li.className = 'fardo-item';
+            fardosListEl.innerHTML = "";
+            fardos.forEach((fardo) => {
+                const li = document.createElement("li");
+                li.className = "fardo-item";
                 if (fardo.revisado) {
-                    li.classList.add('checked');
+                    li.classList.add("checked");
                 }
                 li.textContent = fardo.paquete;
                 fardosListEl.appendChild(li);
             });
         }
-        
+
         function playBeepSound() {
             if (beepAudio) {
-                // Reinicia el sonido para que se pueda reproducir varias veces
                 beepAudio.currentTime = 0;
-                beepAudio.play().catch(e => console.error("Error al reproducir el sonido:", e));
+                beepAudio.play().catch((e) => console.error("Error al reproducir el sonido:", e));
             }
         }
 
-        // Variables para evitar detecciones repetidas muy rápidas
         let lastDetectedCode = null;
         let lastDetectedTime = 0;
 
-        Quagga.onProcessed(function(result) {
+        Quagga.onProcessed(function (result) {
             const drawingCtx = Quagga.canvas.ctx.overlay;
             const drawingCanvas = Quagga.canvas.dom.overlay;
 
@@ -323,9 +337,9 @@
             if (result) {
                 if (result.boxes) {
                     result.boxes
-                        .filter(box => box !== result.box)
-                        .forEach(box => {
-                            drawingCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        .filter((box) => box !== result.box)
+                        .forEach((box) => {
+                            drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.3)";
                             drawingCtx.lineWidth = 1;
                             drawingCtx.beginPath();
                             box.forEach((point, index) => {
@@ -342,7 +356,8 @@
 
                 if (result.box) {
                     drawingCtx.lineWidth = 3;
-                    drawingCtx.strokeStyle = 'rgb(40, 167, 69)'; // verde
+                    drawingCtx.strokeStyle = "rgb(40, 167, 69)"; // borde verde
+                    drawingCtx.fillStyle = "rgba(40, 167, 69, 0.3)"; // relleno verde translúcido
                     drawingCtx.beginPath();
                     result.box.forEach((point, index) => {
                         if (index === 0) {
@@ -352,23 +367,23 @@
                         }
                     });
                     drawingCtx.closePath();
+                    drawingCtx.fill();
                     drawingCtx.stroke();
                 }
             }
         });
 
-        Quagga.onDetected(function(result) {
+        Quagga.onDetected(function (result) {
             const code = result.codeResult.code;
             const now = Date.now();
 
-            // Evitar procesar el mismo código repetidamente en poco tiempo
-            if (code === lastDetectedCode && (now - lastDetectedTime) < 1500) {
+            if (code === lastDetectedCode && now - lastDetectedTime < 1500) {
                 return;
             }
             lastDetectedCode = code;
             lastDetectedTime = now;
 
-            const fardoEncontrado = fardos.find(f => f.paquete === code);
+            const fardoEncontrado = fardos.find((f) => f.paquete === code);
 
             if (fardoEncontrado && !fardoEncontrado.revisado) {
                 fardoEncontrado.revisado = true;
@@ -376,18 +391,17 @@
 
                 playBeepSound();
 
-                // Mostrar mensaje temporal
-                let barcodeDetectedMsg = document.querySelector('.barcode-detected-msg');
+                let barcodeDetectedMsg = document.querySelector(".barcode-detected-msg");
                 if (!barcodeDetectedMsg) {
-                    barcodeDetectedMsg = document.createElement('div');
-                    barcodeDetectedMsg.className = 'barcode-detected-msg';
+                    barcodeDetectedMsg = document.createElement("div");
+                    barcodeDetectedMsg.className = "barcode-detected-msg";
                     cameraContainer.appendChild(barcodeDetectedMsg);
                 }
-                barcodeDetectedMsg.textContent = 'Fardo Escaneado! ✅';
-                barcodeDetectedMsg.style.display = 'block';
+                barcodeDetectedMsg.textContent = "Fardo Escaneado! ✅";
+                barcodeDetectedMsg.style.display = "block";
 
                 setTimeout(() => {
-                    barcodeDetectedMsg.style.display = 'none';
+                    barcodeDetectedMsg.style.display = "none";
                 }, 1000);
             }
         });
