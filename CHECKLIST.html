@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Checklist de Fardos con Escáner</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .file-input-container {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .status-container {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #e9ebee;
+        }
+        .status-box {
+            font-size: 1.2em;
+        }
+        .status-box .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .status-box .count {
+            display: block;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        #total-fardos .count { color: #007BFF; }
+        #fardos-revisados .count { color: #28a745; }
+        #fardos-pendientes .count { color: #dc3545; }
+
+        #camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #camera-container video {
+            width: 100%;
+            display: block;
+        }
+        #camera-container canvas {
+            display: none;
+        }
+        .barcode-detected-msg {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(40, 167, 69, 0.8);
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+        }
+        #fardos-list-container {
+            margin-top: 20px;
+            border-top: 2px solid #ccc;
+            padding-top: 15px;
+        }
+        #fardos-list {
+            list-style-type: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        .fardo-item {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            transition: background-color 0.3s ease;
+        }
+        .fardo-item.checked {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✅ Checklist de Fardos</h2>
+        <div class="controls">
+            <div class="file-input-container">
+                <input type="file" id="fileInput" accept=".xlsx, .xls" />
+            </div>
+            <div class="status-container">
+                <div class="status-box" id="total-fardos">
+                    <span class="label">Total Fardos</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="status-box" id="fardos-revisados">
+                    <span class="label">Revisados</span>
+                    <span class="count">0</span>
+                </div>
+                <div class="status-box" id="fardos-pendientes">
+                    <span class="label">Pendientes</span>
+                    <span class="count">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="camera-container">
+            <video id="camera-feed"></video>
+            <div class="barcode-detected-msg" id="barcode-detected-msg">Fardo Escaneado! ✅</div>
+        </div>
+
+        <div id="fardos-list-container">
+            <h3>Lista de Fardos</h3>
+            <ul id="fardos-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        let excelData = null;
+        let fardos = [];
+
+        const fileInput = document.getElementById('fileInput');
+        const totalFardosEl = document.querySelector('#total-fardos .count');
+        const revisadosFardosEl = document.querySelector('#fardos-revisados .count');
+        const pendientesFardosEl = document.querySelector('#fardos-pendientes .count');
+        const fardosListEl = document.getElementById('fardos-list');
+        const barcodeDetectedMsg = document.getElementById('barcode-detected-msg');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets["Packing List"];
+                if (!sheet) {
+                    alert("❌ La hoja 'Packing List' no fue encontrada.");
+                    return;
+                }
+                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                procesarDatos(rawData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function procesarDatos(rawData) {
+            const fardosUnicos = new Set();
+            for (let i = 12; i < rawData.length; i++) {
+                const fila = rawData[i];
+                if (fila && fila[1]) {
+                    fardosUnicos.add(fila[1].toString());
+                }
+            }
+            fardos = Array.from(fardosUnicos).map(paquete => ({
+                paquete: paquete,
+                revisado: false
+            }));
+
+            iniciarEscaneo();
+            actualizarUI();
+        }
+
+        function actualizarUI() {
+            const revisados = fardos.filter(f => f.revisado).length;
+            const pendientes = fardos.length - revisados;
+
+            totalFardosEl.textContent = fardos.length;
+            revisadosFardosEl.textContent = revisados;
+            pendientesFardosEl.textContent = pendientes;
+
+            fardosListEl.innerHTML = '';
+            fardos.forEach(fardo => {
+                const li = document.createElement('li');
+                li.className = 'fardo-item';
+                if (fardo.revisado) {
+                    li.classList.add('checked');
+                }
+                li.textContent = fardo.paquete;
+                fardosListEl.appendChild(li);
+            });
+        }
+
+        function iniciarEscaneo() {
+            Quagga.init({
+                inputStream : {
+                    name : "Live",
+                    type : "LiveStream",
+                    target: document.querySelector('#camera-feed'),
+                    constraints: {
+                        facingMode: "environment" // Usar la cámara trasera en móviles
+                    }
+                },
+                decoder : {
+                    readers : ["code_128_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("Error al iniciar la cámara. Asegúrese de tener una cámara conectada y de dar los permisos necesarios.");
+                    return
+                }
+                console.log("QuaggaJS inicializado. ¡Listo para escanear!");
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                const fardoEncontrado = fardos.find(f => f.paquete === code);
+                
+                if (fardoEncontrado && !fardoEncontrado.revisado) {
+                    fardoEncontrado.revisado = true;
+                    actualizarUI();
+                    
+                    barcodeDetectedMsg.style.display = 'block';
+                    setTimeout(() => {
+                        barcodeDetectedMsg.style.display = 'none';
+                    }, 1000);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
