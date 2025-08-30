@@ -67,16 +67,13 @@
         #camera-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 95%; /* Hacemos que sea más grande */
+            height: 400px; /* Le damos una altura fija */
             margin: auto;
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
             background-color: #000;
-        }
-        #camera-feed {
-            width: 100%;
-            display: none;
         }
         #camera-container canvas, #camera-container video {
             position: absolute;
@@ -86,13 +83,8 @@
             height: 100%;
             object-fit: cover;
         }
-        #detection-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background-color: red;
-            z-index: 15;
-            display: none;
+        .drawingBuffer {
+            z-index: 10;
         }
         #start-button {
             margin-top: 10px;
@@ -206,6 +198,7 @@
         const fardosListEl = document.getElementById('fardos-list');
         const cameraContainer = document.getElementById('camera-container');
         const noCameraFoundEl = document.getElementById('no-camera-found');
+        const barcodeDetectedMsg = document.querySelector('.barcode-detected-msg');
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -224,58 +217,50 @@
             reader.readAsArrayBuffer(file);
         });
 
-        startButton.addEventListener('click', async function() {
+        startButton.addEventListener('click', function() {
             if (!isQuaggaStarted) {
-                try {
-                    Quagga.init({
-                        inputStream: {
-                            name: "Live",
-                            type: "LiveStream",
-                            target: cameraContainer,
-                            constraints: {
-                                width: { min: 640 },
-                                height: { min: 480 },
-                                facingMode: "environment"
-                            },
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: cameraContainer,
+                        constraints: {
+                            width: { min: 640 },
+                            height: { min: 480 },
+                            facingMode: "environment"
                         },
-                        decoder: {
-                            readers: ["code_128_reader"]
-                        },
-                        locator: {
-                            patchSize: "medium",
-                            halfSample: true
-                        },
-                        locate: true
-                    }, function(err) {
-                        if (err) {
-                            console.error("Error al iniciar Quagga:", err);
-                            noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
-                            noCameraFoundEl.style.display = 'block';
-                            startButton.disabled = false;
-                            return;
-                        }
-                        
-                        noCameraFoundEl.style.display = 'none';
-                        const video = document.querySelector('#camera-container video');
-                        const canvas = document.querySelector('#camera-container canvas');
+                    },
+                    decoder: {
+                        readers: ["code_128_reader"]
+                    },
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: true
+                    },
+                    locate: true
+                }, function(err) {
+                    if (err) {
+                        console.error("Error al iniciar Quagga:", err);
+                        noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
+                        noCameraFoundEl.style.display = 'block';
+                        startButton.disabled = false;
+                        return;
+                    }
+                    
+                    noCameraFoundEl.style.display = 'none';
+                    const video = document.querySelector('#camera-container video');
+                    const canvas = document.querySelector('#camera-container canvas');
 
-                        if (video) video.style.display = 'block';
-                        if (canvas) canvas.style.display = 'block';
+                    if (video) video.style.display = 'block';
+                    if (canvas) canvas.style.display = 'block';
 
-                        console.log("QuaggaJS inicializado. ¡Listo para escanear!");
-                        Quagga.start();
-                    });
+                    console.log("QuaggaJS inicializado. ¡Listo para escanear!");
+                    Quagga.start();
+                });
 
-                    isQuaggaStarted = true;
-                    startButton.textContent = "Escáner Activado";
-                    startButton.disabled = true;
-
-                } catch (err) {
-                    console.error("Error al acceder a la cámara:", err);
-                    noCameraFoundEl.textContent = "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
-                    noCameraFoundEl.style.display = 'block';
-                    startButton.disabled = false;
-                }
+                isQuaggaStarted = true;
+                startButton.textContent = "Escáner Activado";
+                startButton.disabled = true;
             }
         });
 
@@ -322,8 +307,8 @@
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
             gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
             gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
@@ -350,6 +335,20 @@
                 barcodeDetectedMsg.textContent = 'Fardo Escaneado! ✅';
                 cameraContainer.appendChild(barcodeDetectedMsg);
 
+                // Dibujar el recuadro verde
+                const drawingCanvas = Quagga.canvas.ctx.canvas;
+                const canvasCtx = drawingCanvas.getContext("2d");
+                
+                canvasCtx.lineWidth = 4;
+                canvasCtx.strokeStyle = "rgb(40, 167, 69)";
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(result.box[0][0], result.box[0][1]);
+                for (let i = 1; i < result.box.length; i++) {
+                    canvasCtx.lineTo(result.box[i][0], result.box[i][1]);
+                }
+                canvasCtx.lineTo(result.box[0][0], result.box[0][1]);
+                canvasCtx.stroke();
+                
                 setTimeout(() => {
                     barcodeDetectedMsg.remove();
                 }, 1000);
