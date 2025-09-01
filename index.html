@@ -640,9 +640,45 @@ alertWarning: document.getElementById("alert-warning")
 
 // Sistema de sonido mejorado
 class SoundSystem {
+    static init() {
+        // Inicializar el audio del beep desde la misma carpeta
+        this.beepAudio = new Audio('./store-scanner-beep-90395.mp3');
+        this.beepAudio.volume = 0.7;
+        this.beepAudio.preload = 'auto';
+        
+        // Intentar cargar el audio
+        this.beepAudio.addEventListener('canplaythrough', () => {
+            console.log('Audio del scanner cargado correctamente');
+        });
+        
+        this.beepAudio.addEventListener('error', (e) => {
+            console.log('Error al cargar el audio del scanner, usando fallback:', e);
+            this.useWebAudioFallback = true;
+        });
+    }
+    
     static playBeep() {
         try {
-            // Crear beep con Web Audio API
+            if (this.beepAudio && !this.useWebAudioFallback) {
+                // Usar el archivo MP3 desde GitHub
+                this.beepAudio.currentTime = 0;
+                this.beepAudio.play().catch(e => {
+                    console.log('Error reproduciendo MP3, usando fallback:', e);
+                    this.playWebAudioBeep();
+                });
+            } else {
+                // Fallback a Web Audio API
+                this.playWebAudioBeep();
+            }
+        } catch (e) {
+            console.log('Error en playBeep:', e);
+            this.playWebAudioBeep();
+        }
+    }
+    
+    static playWebAudioBeep() {
+        try {
+            // Crear beep con Web Audio API como fallback
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -660,36 +696,18 @@ class SoundSystem {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (e) {
-            console.log('No se pudo reproducir el sonido:', e);
+            console.log('No se pudo reproducir el sonido fallback:', e);
         }
     }
     
     static playSuccessSound() {
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Secuencia de tonos para sonido de éxito
-            const frequencies = [523, 659, 784]; // Do, Mi, Sol
-            frequencies.forEach((freq, index) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-                oscillator.type = 'sine';
-                
-                const startTime = audioContext.currentTime + index * 0.1;
-                gainNode.gain.setValueAtTime(0, startTime);
-                gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
-                
-                oscillator.start(startTime);
-                oscillator.stop(startTime + 0.15);
-            });
+            // Para el sonido de éxito, usar el mismo beep 3 veces
+            this.playBeep();
+            setTimeout(() => this.playBeep(), 150);
+            setTimeout(() => this.playBeep(), 300);
         } catch (e) {
-            console.log('No se pudo reproducir el sonido de éxito:', e);
+            console.log('Error en playSuccessSound:', e);
         }
     }
 }
@@ -1163,6 +1181,7 @@ return;
 }
 
 // Inicializar módulos
+SoundSystem.init(); // Inicializar sistema de sonido
 FileSystem.init();
 ScannerSystem.init();
 MetricsSystem.update();
