@@ -955,7 +955,27 @@
             
             static initBeepSound() {
                 try {
-                    // Crear un beep usando Web Audio API
+                    // Crear audio element para reproducir el MP3
+                    beepAudio = new Audio('store-scanner-beep-90395.mp3');
+                    beepAudio.volume = 0.7; // Ajustar volumen (0.0 a 1.0)
+                    beepAudio.preload = 'auto';
+                    
+                    this.playBeep = () => {
+                        // Reiniciar el audio al principio si ya se está reproduciendo
+                        beepAudio.currentTime = 0;
+                        beepAudio.play().catch(e => {
+                            console.log('No se pudo reproducir el sonido:', e);
+                        });
+                    };
+                } catch (e) {
+                    console.log('Error al cargar el archivo de audio:', e);
+                    // Fallback al beep original si el MP3 no se puede cargar
+                    this.initFallbackBeep();
+                }
+            }
+
+            static initFallbackBeep() {
+                try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
                     this.playBeep = () => {
