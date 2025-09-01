@@ -2,88 +2,395 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <title>Checklist de Fardos con Escáner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KALAF SOFT - Sistema Check List de Paquetes</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .file-input-container {
-            margin-bottom: 10px;
-            width: 100%;
-        }
-        .status-container {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #e9ebee;
-        }
-        .status-box {
-            font-size: 1.2em;
-        }
-        .status-box .label {
-            font-weight: bold;
-            color: #555;
-        }
-        .status-box .count {
-            display: block;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        #total-fardos .count {
-            color: #007bff;
-        }
-        #fardos-revisados .count {
-            color: #28a745;
-        }
-        #fardos-pendientes .count {
-            color: #dc3545;
+        :root {
+            --primary-color: #1e3a8a;
+            --primary-light: #3b82f6;
+            --secondary-color: #059669;
+            --secondary-light: #10b981;
+            --accent-color: #dc2626;
+            --accent-light: #ef4444;
+            --warning-color: #d97706;
+            --warning-light: #f59e0b;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #camera-container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .app-container {
+            max-width: 414px;
+            margin: 0 auto;
+            background: var(--light-color);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Header profesional */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            padding: 20px;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .app-header .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .app-header .logo {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .app-header .company-info h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .app-header .company-info p {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .app-header .version {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 10px;
+            opacity: 0.8;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Área principal */
+        .main-content {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* Tarjetas profesionales */
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark-color);
+        }
+
+        .card-header i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            width: 16px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Sistema de alertas profesional */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            display: none;
+            border-left: 4px solid;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--secondary-color);
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--accent-color);
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: var(--warning-color);
+            color: #92400e;
+        }
+
+        /* Botones del sistema */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+            color: white;
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        /* Input de archivo profesional */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px dashed var(--primary-light);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border-color: var(--primary-color);
+        }
+
+        .file-input-label.has-file {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .file-input-label i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        /* Dashboard de métricas */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 16px 12px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .metric-card.total::before { background: var(--primary-light); }
+        .metric-card.success::before { background: var(--secondary-color); }
+        .metric-card.pending::before { background: var(--accent-color); }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .metric-card.total .metric-value { color: var(--primary-color); }
+        .metric-card.success .metric-value { color: var(--secondary-color); }
+        .metric-card.pending .metric-value { color: var(--accent-color); }
+
+        .metric-label {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Barra de progreso profesional */
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .progress-percentage {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
+            border-radius: 3px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Cámara profesional */
+        .camera-container {
             position: relative;
             width: 100%;
-            max-width: 95%;
-            height: 400px;
-            margin: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            height: 280px;
+            border-radius: var(--border-radius);
             overflow: hidden;
-            background-color: #000;
+            background: #000;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
         }
-        #camera-container canvas,
-        #camera-container video {
+
+        .camera-container canvas,
+        .camera-container video {
             position: absolute;
             top: 0;
             left: 0;
@@ -91,246 +398,667 @@
             height: 100%;
             object-fit: cover;
         }
-        .drawingBuffer {
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
             z-index: 10;
         }
-        #start-button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 1.2em;
-            cursor: pointer;
+
+        .camera-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            max-width: 200px;
         }
 
-        .barcode-detected-msg {
+        .camera-placeholder i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        /* Notificación de escaneo */
+        .scan-notification {
             position: absolute;
-            bottom: 10px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(40, 167, 69, 0.8);
-            color: #fff;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            z-index: 20;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 13px;
             display: none;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+            z-index: 20;
         }
-        #fardos-list-container {
-            margin-top: 20px;
-            border-top: 2px solid #ccc;
-            padding-top: 15px;
+
+        .scan-notification.success {
+            background: linear-gradient(135deg, var(--secondary-color), var(--secondary-light));
         }
-        #fardos-list {
-            list-style-type: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
+
+        .scan-notification.warning {
+            background: linear-gradient(135deg, var(--warning-color), var(--warning-light));
         }
-        .fardo-item {
-            padding: 8px;
-            text-align: center;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            transition: background-color 0.3s ease;
-            position: relative;
-        }
-        .fardo-item.checked {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-            font-weight: bold;
-        }
-        .fardo-item.checked::after {
-            content: "\f00c"; /* Icono de "check" de Font Awesome */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            color: #28a745;
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 1.2em;
-        }
-        @media (max-width: 600px) {
-            .fardo-item {
-                font-size: 0.9em;
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(20px);
+                opacity: 0;
             }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Lista de paquetes profesional */
+        .fardos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .fardo-item {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dark-color);
+            transition: var(--transition);
+            position: relative;
+            cursor: default;
+        }
+
+        .fardo-item.completed {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-color: var(--secondary-color);
+            color: #065f46;
+            transform: scale(1.02);
+        }
+
+        .fardo-item.completed::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 16px;
+            height: 16px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .fardo-item.completed::after {
+            content: '✓';
+        }
+
+        /* Estilos de scrollbar */
+        .fardos-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .fardos-grid::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 2px;
+        }
+
+        .fardos-grid::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .fardos-grid::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Footer de la app */
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .app-footer .status {
+            display: flex;
+            align-items: center;
+        }
+
+        .app-footer .status i {
+            margin-right: 6px;
+            color: var(--secondary-color);
+        }
+
+        /* Estados de conexión */
+        .connection-status {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.offline {
+            background: #ef4444;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 375px) {
+            .main-content { padding: 16px; }
+            .card-body { padding: 16px; }
+            .metrics-grid { gap: 8px; }
+            .fardos-grid { grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>✅ Checklist de Fardos</h2>
-        <div class="controls">
-            <div class="file-input-container">
-                <input type="file" id="fileInput" accept=".xlsx, .xls" />
-            </div>
-            <button id="start-button">Iniciar Escáner</button>
-            <div class="status-container">
-                <div class="status-box" id="total-fardos">
-                    <span class="label">Total Fardos</span>
-                    <span class="count">0</span>
-                </div>
-                <div class="status-box" id="fardos-revisados">
-                    <span class="label">Revisados</span>
-                    <span class="count">0</span>
-                </div>
-                <div class="status-box" id="fardos-pendientes">
-                    <span class="label">Pendientes</span>
-                    <span class="count">0</span>
+    <div class="app-container">
+        <!-- Header profesional -->
+        <header class="app-header">
+            <div class="version">v2.1.0</div>
+            <div class="connection-status" id="connection-status"></div>
+            <div class="logo-section">
+                <div class="logo">📋</div>
+                <div class="company-info">
+                    <h1>KALAF SOFT</h1>
+                    <p>Sistema Check List de Paquetes de Piso</p>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <div id="camera-container">
-            <div
-                id="no-camera-found"
-                style="text-align: center; padding: 20px; display: block"
-            >
-                Haz clic en "Iniciar Escáner" para activar la cámara.
-            </div>
-        </div>
+        <main class="main-content">
+            <!-- Sistema de alertas -->
+            <div class="alert alert-error" id="alert-error"></div>
+            <div class="alert alert-success" id="alert-success"></div>
+            <div class="alert alert-warning" id="alert-warning"></div>
 
-        <div id="fardos-list-container">
-            <h3>Lista de Fardos</h3>
-            <ul id="fardos-list"></ul>
-        </div>
+            <!-- Configuración del sistema -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cog"></i>
+                    Configuración del Sistema
+                </div>
+                <div class="card-body">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls" />
+                        <label for="fileInput" class="file-input-label" id="file-label">
+                            <i class="fas fa-upload"></i>
+                            <span>Seleccionar Archivo Excel</span>
+                        </label>
+                    </div>
+                    <button id="start-button" class="btn btn-danger" disabled>
+                        <i class="fas fa-camera"></i>
+                        <span>Activar Escáner</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard de métricas -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Panel de Control
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid">
+                        <div class="metric-card total">
+                            <div class="metric-value" id="total-count">0</div>
+                            <div class="metric-label">Total</div>
+                        </div>
+                        <div class="metric-card success">
+                            <div class="metric-value" id="completed-count">0</div>
+                            <div class="metric-label">Completados</div>
+                        </div>
+                        <div class="metric-card pending">
+                            <div class="metric-value" id="pending-count">0</div>
+                            <div class="metric-label">Pendientes</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span class="progress-label">Progreso General</span>
+                            <span class="progress-percentage" id="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cámara del escáner -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-qrcode"></i>
+                    Escáner de Códigos de Barras
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="camera-container" id="camera-container">
+                        <div class="camera-placeholder" id="camera-placeholder">
+                            <i class="fas fa-camera"></i>
+                            <div>Presiona "Activar Escáner" para comenzar</div>
+                        </div>
+                        <div class="camera-overlay"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de paquetes -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-list-check"></i>
+                    Lista de Paquetes de Piso
+                    <span class="loading-spinner" id="loading-spinner" style="display: none; margin-left: auto;"></span>
+                </div>
+                <div class="card-body">
+                    <div class="fardos-grid" id="fardos-grid">
+                        <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 40px 20px; font-size: 14px;">
+                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                            Carga un archivo Excel para mostrar los paquetes
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer de la app -->
+        <footer class="app-footer">
+            <div class="status">
+                <i class="fas fa-shield-check"></i>
+                Sistema Activo
+            </div>
+            <div>© 2024 KALAF SOFT</div>
+        </footer>
+
+        <!-- Notificación de escaneo -->
+        <div class="scan-notification" id="scan-notification"></div>
     </div>
 
     <script>
+        // Variables del sistema
         let fardos = [];
         let isQuaggaStarted = false;
         let beepAudio;
+        let systemReady = false;
 
-        const fileInput = document.getElementById("fileInput");
-        const startButton = document.getElementById("start-button");
-        const totalFardosEl = document.querySelector("#total-fardos .count");
-        const revisadosFardosEl = document.querySelector("#fardos-revisados .count");
-        const pendientesFardosEl = document.querySelector("#fardos-pendientes .count");
-        const fardosListEl = document.getElementById("fardos-list");
-        const cameraContainer = document.getElementById("camera-container");
-        const noCameraFoundEl = document.getElementById("no-camera-found");
+        // Referencias a elementos DOM
+        const elements = {
+            fileInput: document.getElementById("fileInput"),
+            fileLabel: document.getElementById("file-label"),
+            startButton: document.getElementById("start-button"),
+            cameraContainer: document.getElementById("camera-container"),
+            cameraPlaceholder: document.getElementById("camera-placeholder"),
+            fardosGrid: document.getElementById("fardos-grid"),
+            scanNotification: document.getElementById("scan-notification"),
+            connectionStatus: document.getElementById("connection-status"),
+            loadingSpinner: document.getElementById("loading-spinner"),
+            
+            // Contadores
+            totalCount: document.getElementById("total-count"),
+            completedCount: document.getElementById("completed-count"),
+            pendingCount: document.getElementById("pending-count"),
+            progressFill: document.getElementById("progress-fill"),
+            progressPercentage: document.getElementById("progress-percentage"),
+            
+            // Alertas
+            alertError: document.getElementById("alert-error"),
+            alertSuccess: document.getElementById("alert-success"),
+            alertWarning: document.getElementById("alert-warning")
+        };
 
-        fileInput.addEventListener("change", function (e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
-                const sheet = workbook.Sheets["Packing List"];
-                if (!sheet) {
-                    alert("❌ La hoja 'Packing List' no fue encontrada.");
+        // Sistema de notificaciones
+        class NotificationSystem {
+            static show(type, message, duration = 5000) {
+                const alert = elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`];
+                if (!alert) return;
+                
+                alert.textContent = message;
+                alert.style.display = 'block';
+                
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, duration);
+                
+                // Ocultar otras alertas
+                ['error', 'success', 'warning'].forEach(t => {
+                    if (t !== type) {
+                        elements[`alert${t.charAt(0).toUpperCase() + t.slice(1)}`].style.display = 'none';
+                    }
+                });
+            }
+            
+            static hide() {
+                ['error', 'success', 'warning'].forEach(type => {
+                    elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`].style.display = 'none';
+                });
+            }
+        }
+
+        // Sistema de métricas
+        class MetricsSystem {
+            static update() {
+                const total = fardos.length;
+                const completed = fardos.filter(f => f.revisado).length;
+                const pending = total - completed;
+                const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                
+                elements.totalCount.textContent = total;
+                elements.completedCount.textContent = completed;
+                elements.pendingCount.textContent = pending;
+                elements.progressFill.style.width = `${percentage}%`;
+                elements.progressPercentage.textContent = `${percentage}%`;
+                
+                // Actualizar estado de conexión
+                elements.connectionStatus.className = systemReady ? 'connection-status' : 'connection-status offline';
+                
+                // Verificar completado
+                if (total > 0 && completed === total) {
+                    NotificationSystem.show('success', `🎉 ¡Excelente! Todos los ${total} paquetes han sido procesados correctamente.`);
+                    this.triggerCompletionEffects();
+                }
+            }
+            
+            static triggerCompletionEffects() {
+                // Vibración de éxito
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+                
+                // Efecto visual en la barra de progreso
+                elements.progressFill.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)';
+                elements.progressFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
+            }
+        }
+
+        // Sistema de archivos
+        class FileSystem {
+            static init() {
+                elements.fileInput.addEventListener('change', this.handleFileChange.bind(this));
+            }
+            
+            static handleFileChange(event) {
+                const file = event.target.files[0];
+                const label = elements.fileLabel;
+                
+                if (!file) {
+                    this.resetFileInput();
                     return;
                 }
-                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                procesarDatos(rawData);
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        startButton.addEventListener("click", function () {
-            if (!isQuaggaStarted) {
-                beepAudio = new Audio("store-scanner-beep-90395.mp3");
-                beepAudio.volume = 0.5;
-
-                Quagga.init(
-                    {
-                        inputStream: {
-                            name: "Live",
-                            type: "LiveStream",
-                            target: cameraContainer,
-                            constraints: {
-                                width: { min: 640 },
-                                height: { min: 480 },
-                                facingMode: "environment",
-                            },
-                        },
-                        decoder: {
-                            readers: ["code_128_reader"],
-                        },
-                        locator: {
-                            patchSize: "medium",
-                            halfSample: true,
-                        },
-                        locate: true,
-                    },
-                    function (err) {
-                        if (err) {
-                            console.error("Error al iniciar Quagga:", err);
-                            noCameraFoundEl.textContent =
-                                "Error al iniciar la cámara. Asegúrate de haber dado los permisos necesarios.";
-                            noCameraFoundEl.style.display = "block";
-                            startButton.disabled = false;
-                            return;
+                
+                // Actualizar UI del input
+                label.classList.add('has-file');
+                label.innerHTML = `<i class="fas fa-file-excel"></i><span>${file.name}</span>`;
+                
+                // Mostrar loading
+                elements.loadingSpinner.style.display = 'block';
+                NotificationSystem.show('warning', 'Procesando archivo Excel...');
+                
+                // Procesar archivo
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheet = workbook.Sheets["Packing List"];
+                        
+                        if (!sheet) {
+                            throw new Error('La hoja "Packing List" no fue encontrada en el archivo');
                         }
-
-                        noCameraFoundEl.style.display = "none";
-                        const video = document.querySelector("#camera-container video");
-                        const canvas = document.querySelector("#camera-container canvas");
-
-                        if (video) video.style.display = "block";
-                        if (canvas) canvas.style.display = "block";
-
-                        console.log("QuaggaJS inicializado. ¡Listo para escanear!");
-                        Quagga.start();
+                        
+                        const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        this.procesarDatos(rawData);
+                        
+                    } catch (error) {
+                        console.error('Error al procesar archivo:', error);
+                        NotificationSystem.show('error', `❌ Error: ${error.message}`);
+                        this.resetFileInput();
+                    } finally {
+                        elements.loadingSpinner.style.display = 'none';
                     }
-                );
-
-                isQuaggaStarted = true;
-                startButton.textContent = "Escáner Activado";
-                startButton.disabled = true;
+                };
+                
+                reader.readAsArrayBuffer(file);
             }
-        });
+            
+            static resetFileInput() {
+                const label = elements.fileLabel;
+                label.classList.remove('has-file');
+                label.innerHTML = '<i class="fas fa-upload"></i><span>Seleccionar Archivo Excel</span>';
+                elements.fileInput.value = '';
+                elements.startButton.disabled = true;
+                systemReady = false;
+                MetricsSystem.update();
+            }
+            
+            static procesarDatos(rawData) {
+                const fardosUnicos = new Set();
+                
+                // Extraer paquetes únicos del archivo Excel
+                for (let i = 12; i < rawData.length; i++) {
+                    const fila = rawData[i];
+                    if (fila && fila[1]) {
+                        fardosUnicos.add(fila[1].toString().trim());
+                    }
+                }
+                
+                // Convertir a array de objetos
+                fardos = Array.from(fardosUnicos).map((paquete) => ({
+                    paquete: paquete,
+                    revisado: false,
+                    timestamp: null
+                }));
+                
+                if (fardos.length > 0) {
+                    NotificationSystem.show('success', `✅ Se cargaron ${fardos.length} paquetes correctamente.`);
+                    elements.startButton.disabled = false;
+                    systemReady = true;
+                    this.renderFardosList();
+                } else {
+                    NotificationSystem.show('error', '❌ No se encontraron paquetes válidos en el archivo.');
+                    systemReady = false;
+                }
+                
+                MetricsSystem.update();
+            }
+            
+            static renderFardosList() {
+                const grid = elements.fardosGrid;
+                grid.innerHTML = '';
+                
+                fardos.forEach((fardo, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'fardo-item';
+                    item.textContent = fardo.paquete;
+                    item.id = `fardo-${index}`;
+                    
+                    if (fardo.revisado) {
+                        item.classList.add('completed');
+                    }
+                    
+                    grid.appendChild(item);
+                });
+            }
+        }
 
-        function procesarDatos(rawData) {
-            const fardosUnicos = new Set();
-            for (let i = 12; i < rawData.length; i++) {
-                const fila = rawData[i];
-                if (fila && fila[1]) {
-                    fardosUnicos.add(fila[1].toString());
+        // Sistema de cámara y escáner
+        class ScannerSystem {
+            static init() {
+                elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
+                this.initBeepSound();
+            }
+            
+            static initBeepSound() {
+                try {
+                    // Crear un beep usando Web Audio API
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    this.playBeep = () => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.value = 800;
+                        oscillator.type = 'square';
+                        
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                    };
+                } catch (e) {
+                    console.log('Web Audio API no disponible');
+                    this.playBeep = () => {};
                 }
             }
-            fardos = Array.from(fardosUnicos).map((paquete) => ({
-                paquete: paquete,
-                revisado: false,
-            }));
-
-            actualizarUI();
-        }
-
-        function actualizarUI() {
-            const revisados = fardos.filter((f) => f.revisado).length;
-            const pendientes = fardos.length - revisados;
-
-            totalFardosEl.textContent = fardos.length;
-            revisadosFardosEl.textContent = revisados;
-            pendientesFardosEl.textContent = pendientes;
-
-            fardosListEl.innerHTML = "";
-            fardos.forEach((fardo) => {
-                const li = document.createElement("li");
-                li.className = "fardo-item";
-                if (fardo.revisado) {
-                    li.classList.add("checked");
+            
+            static handleStartScanner() {
+                if (!systemReady) {
+                    NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
+                    return;
                 }
-                li.textContent = fardo.paquete;
-                fardosListEl.appendChild(li);
-            });
-        }
 
-        function playBeepSound() {
-            if (beepAudio) {
-                beepAudio.currentTime = 0;
-                beepAudio.play().catch((e) => console.error("Error al reproducir el sonido:", e));
+                if (!isQuaggaStarted) {
+                    NotificationSystem.hide();
+                    this.startQuagga();
+                }
+            }
+            
+            static startQuagga() {
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: elements.cameraContainer,
+                        constraints: {
+                            width: { min: 640 },
+                            height: { min: 480 },
+                            facingMode: "environment",
+                        },
+                    },
+                    decoder: {
+                        readers: ["code_128_reader", "ean_reader", "ean_8_reader"],
+                    },
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: true,
+                    },
+                    locate: true,
+                }, (err) => {
+                    if (err) {
+                        console.error("Error al iniciar Quagga:", err);
+                        NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
+                        elements.cameraPlaceholder.style.display = "block";
+                        return;
+                    }
+
+                    elements.cameraPlaceholder.style.display = "none";
+                    
+                    const video = elements.cameraContainer.querySelector("video");
+                    const canvas = elements.cameraContainer.querySelector("canvas");
+
+                    if (video) video.style.display = "block";
+                    if (canvas) canvas.style.display = "block";
+
+                    Quagga.start();
+                    isQuaggaStarted = true;
+                    
+                    elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
+                    elements.startButton.className = "btn btn-success";
+                    
+                    NotificationSystem.show('success', '✅ Escáner activado. Apunte la cámara hacia los códigos de barras.');
+                });
+            }
+            
+            static showScanNotification(message, type = 'success') {
+                const notification = elements.scanNotification;
+                notification.textContent = message;
+                notification.className = `scan-notification ${type}`;
+                notification.style.display = 'block';
+                
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, type === 'warning' ? 1500 : 2000);
             }
         }
 
+        // Inicialización de eventos Quagga
         let lastDetectedCode = null;
         let lastDetectedTime = 0;
 
         Quagga.onProcessed(function (result) {
             const drawingCtx = Quagga.canvas.ctx.overlay;
             const drawingCanvas = Quagga.canvas.dom.overlay;
+
+            if (!drawingCtx || !drawingCanvas) return;
 
             drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
@@ -339,8 +1067,8 @@
                     result.boxes
                         .filter((box) => box !== result.box)
                         .forEach((box) => {
-                            drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-                            drawingCtx.lineWidth = 1;
+                            drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+                            drawingCtx.lineWidth = 2;
                             drawingCtx.beginPath();
                             box.forEach((point, index) => {
                                 if (index === 0) {
@@ -355,9 +1083,9 @@
                 }
 
                 if (result.box) {
-                    drawingCtx.lineWidth = 3;
-                    drawingCtx.strokeStyle = "rgb(40, 167, 69)"; // borde verde
-                    drawingCtx.fillStyle = "rgba(40, 167, 69, 0.3)"; // relleno verde translúcido
+                    drawingCtx.lineWidth = 4;
+                    drawingCtx.strokeStyle = "#10b981";
+                    drawingCtx.fillStyle = "rgba(16, 185, 129, 0.2)";
                     drawingCtx.beginPath();
                     result.box.forEach((point, index) => {
                         if (index === 0) {
@@ -374,36 +1102,91 @@
         });
 
         Quagga.onDetected(function (result) {
-            const code = result.codeResult.code;
+            const code = result.codeResult.code.trim();
             const now = Date.now();
 
+            // Evitar detecciones duplicadas muy rápidas
             if (code === lastDetectedCode && now - lastDetectedTime < 1500) {
                 return;
             }
+            
             lastDetectedCode = code;
             lastDetectedTime = now;
 
-            const fardoEncontrado = fardos.find((f) => f.paquete === code);
+            const fardoIndex = fardos.findIndex((f) => f.paquete === code);
+            const fardoEncontrado = fardoIndex !== -1 ? fardos[fardoIndex] : null;
 
             if (fardoEncontrado && !fardoEncontrado.revisado) {
+                // Marcar como revisado
                 fardoEncontrado.revisado = true;
-                actualizarUI();
-
-                playBeepSound();
-
-                let barcodeDetectedMsg = document.querySelector(".barcode-detected-msg");
-                if (!barcodeDetectedMsg) {
-                    barcodeDetectedMsg = document.createElement("div");
-                    barcodeDetectedMsg.className = "barcode-detected-msg";
-                    cameraContainer.appendChild(barcodeDetectedMsg);
+                fardoEncontrado.timestamp = new Date();
+                
+                // Actualizar UI
+                MetricsSystem.update();
+                
+                // Actualizar elemento visual
+                const fardoElement = document.getElementById(`fardo-${fardoIndex}`);
+                if (fardoElement) {
+                    fardoElement.classList.add('completed');
                 }
-                barcodeDetectedMsg.textContent = "Fardo Escaneado! ✅";
-                barcodeDetectedMsg.style.display = "block";
-
-                setTimeout(() => {
-                    barcodeDetectedMsg.style.display = "none";
-                }, 1000);
+                
+                // Efectos de feedback
+                ScannerSystem.playBeep();
+                
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(200);
+                }
+                
+                ScannerSystem.showScanNotification(`✅ Paquete ${code} Escaneado!`, 'success');
+                
+            } else if (fardoEncontrado && fardoEncontrado.revisado) {
+                // Paquete ya revisado
+                ScannerSystem.showScanNotification(`⚠️ Paquete ${code} ya fue revisado`, 'warning');
+                
+            } else {
+                // Paquete no encontrado en la lista
+                ScannerSystem.showScanNotification(`❌ Paquete ${code} no encontrado en la lista`, 'warning');
             }
+        });
+
+        // Inicialización de la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 KALAF SOFT - Sistema Check List v2.1.0 iniciado');
+            
+            // Inicializar sistemas
+            FileSystem.init();
+            ScannerSystem.init();
+            MetricsSystem.update();
+            
+            // Configurar estado inicial
+            systemReady = false;
+            elements.connectionStatus.className = 'connection-status offline';
+            
+            // Prevenir zoom en iOS
+            document.addEventListener('touchstart', function() {}, true);
+            
+            // Manejar visibilidad de la página para pausar/reanudar cámara
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden && isQuaggaStarted) {
+                    console.log('Página oculta - pausando escáner');
+                } else if (!document.hidden && isQuaggaStarted) {
+                    console.log('Página visible - reanudando escáner');
+                }
+            });
+            
+            console.log('✅ Sistema inicializado correctamente');
+        });
+
+        // Manejo de errores globales
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
+            NotificationSystem.show('error', '❌ Se produjo un error inesperado. Recargue la página.');
+        });
+
+        // Manejo de errores de promesas no capturadas
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Promesa rechazada:', e.reason);
+            e.preventDefault();
         });
     </script>
 </body>
