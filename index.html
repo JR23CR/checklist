@@ -824,7 +824,7 @@ navigator.vibrate([200, 100, 200, 100, 200]);
 
 // Efecto visual en la barra de progreso
 elements.progressFill.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)';
-elements.progressFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
+elements.progressFill.style.box-shadow = '0 0 20px rgba(16, 185, 129, 0.5)';
 }
 }
 
@@ -940,123 +940,134 @@ grid.appendChild(item);
 
 // Sistema de cámara y escáner
 class ScannerSystem {
-static init() {
-elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
-this.initBeepSound();
-}
-
-static initBeepSound() {
-    try {
-        beepAudio = new Audio('store-scanner-beep-90395.mp3');
-        beepAudio.volume = 0.7;
-        beepAudio.preload = 'auto';
-        
-        this.playBeep = () => {
-            beepAudio.currentTime = 0;
-            beepAudio.play().catch(e => {
-                console.log('No se pudo reproducir el sonido:', e);
-            });
-        };
-    } catch (e) {
-        console.log('Error al cargar el archivo de audio:', e);
-        this.initFallbackBeep();
+    static init() {
+        elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
+        // Se inicializa el sonido en el primer clic para evitar problemas de reproducción
     }
-}
 
-static initFallbackBeep() {
-try {
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    static async initBeepSound() {
+        try {
+            beepAudio = new Audio('store-scanner-beep-90395.mp3');
+            beepAudio.volume = 0.7;
+            beepAudio.preload = 'auto';
 
-this.playBeep = () => {
-const oscillator = audioContext.createOscillator();
-const gainNode = audioContext.createGain();
+            // Intenta reproducir un sonido vacío para "desbloquear" el audio en el navegador
+            await beepAudio.play().catch(e => {
+                console.log('La reproducción de audio fue bloqueada. Se intentará de nuevo al escanear.');
+            });
 
-oscillator.connect(gainNode);
-gainNode.connect(audioContext.destination);
+            this.playBeep = () => {
+                beepAudio.currentTime = 0;
+                beepAudio.play().catch(e => {
+                    console.log('No se pudo reproducir el sonido:', e);
+                });
+            };
+        } catch (e) {
+            console.log('Error al cargar el archivo de audio:', e);
+            this.initFallbackBeep();
+        }
+    }
 
-oscillator.frequency.value = 800;
-oscillator.type = 'square';
+    static initFallbackBeep() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
 
-gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            this.playBeep = () => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
 
-oscillator.start(audioContext.currentTime);
-oscillator.stop(audioContext.currentTime + 0.2);
-};
-} catch (e) {
-console.log('Web Audio API no disponible');
-this.playBeep = () => {};
-}
-}
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
 
-static handleStartScanner() {
-if (!systemReady) {
-NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
-return;
-}
+                oscillator.frequency.value = 800;
+                oscillator.type = 'square';
 
-if (!isQuaggaStarted) {
-NotificationSystem.hide();
-this.startQuagga();
-}
-}
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
 
-static startQuagga() {
-Quagga.init({
-inputStream: {
-name: "Live",
-type: "LiveStream",
-target: elements.cameraContainer,
-constraints: {
-width: { min: 640 },
-height: { min: 480 },
-facingMode: "environment",
-},
-},
-decoder: {
-readers: ["code_128_reader", "ean_reader", "ean_8_reader"],
-},
-locator: {
-patchSize: "medium",
-halfSample: true,
-},
-locate: true,
-}, (err) => {
-if (err) {
-console.error("Error al iniciar Quagga:", err);
-NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
-elements.cameraPlaceholder.style.display = "block";
-return;
-}
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            };
+        } catch (e) {
+            console.log('Web Audio API no disponible');
+            this.playBeep = () => {};
+        }
+    }
 
-elements.cameraPlaceholder.style.display = "none";
+    static handleStartScanner() {
+        if (!systemReady) {
+            NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
+            return;
+        }
 
-const video = elements.cameraContainer.querySelector("video");
-const canvas = elements.cameraContainer.querySelector("canvas");
+        if (!isQuaggaStarted) {
+            NotificationSystem.hide();
+            // Desbloquea el audio en la primera interacción del usuario
+            this.initBeepSound().then(() => {
+                this.startQuagga();
+            });
+        }
+    }
 
-if (video) video.style.display = "block";
-if (canvas) canvas.style.display = "block";
+    static startQuagga() {
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: elements.cameraContainer,
+                constraints: {
+                    width: { min: 640 },
+                    height: { min: 480 },
+                    facingMode: "environment",
+                },
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader"],
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true,
+            },
+            locate: true,
+        }, (err) => {
+            if (err) {
+                console.error("Error al iniciar Quagga:", err);
+                NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
+                elements.cameraPlaceholder.style.display = "block";
+                return;
+            }
 
-Quagga.start();
-isQuaggaStarted = true;
+            elements.cameraPlaceholder.style.display = "none";
 
-elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
-elements.startButton.className = "btn btn-success";
+            const video = elements.cameraContainer.querySelector("video");
+            const canvas = elements.cameraContainer.querySelector("canvas");
 
-NotificationSystem.show('success', '✅ Escáner activado. Apunte la cámara hacia los códigos de barras.');
-});
-}
+            if (video) video.style.display = "block";
+            if (canvas) canvas.style.display = "block";
 
-static showScanNotification(message, type = 'success') {
-const notification = elements.scanNotification;
-notification.textContent = message;
-notification.className = `scan-notification ${type}`;
-notification.style.display = 'block';
+            Quagga.start();
+            isQuaggaStarted = true;
 
-setTimeout(() => {
-notification.style.display = 'none';
-}, type === 'warning' ? 1500 : 2000);
-}
+            elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
+            elements.startButton.className = "btn btn-success";
+
+            NotificationSystem.show('success', '✅ Escáner activado. Apunte la cámara hacia los códigos de barras.');
+        });
+    }
+
+    static showScanNotification(message, type = 'success') {
+        const notification = elements.scanNotification;
+        notification.textContent = message;
+        notification.className = `scan-notification ${type}`;
+        notification.style.display = 'block';
+
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, type === 'warning' ? 1500 : 2000);
+    }
 }
 
 // Inicialización de eventos Quagga
@@ -1081,7 +1092,7 @@ Quagga.onProcessed(function (result) {
     drawingCtx.strokeStyle = "rgba(16, 185, 129, 0.7)"; // Verde semi-transparente
     drawingCtx.lineWidth = 4;
     drawingCtx.strokeRect(x, y, frameWidth, frameHeight);
-    
+
     // Si se detecta un resultado, dibuja los recuadros
     if (result) {
         // Dibuja todos los recuadros de detección (semi-transparentes)
