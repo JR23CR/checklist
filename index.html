@@ -641,43 +641,90 @@ alertWarning: document.getElementById("alert-warning")
 // Sistema de sonido mejorado
 class SoundSystem {
     static init() {
+        this.useWebAudioFallback = false;
+        this.audioLoaded = false;
+        
         // Inicializar el audio del beep desde la misma carpeta
         this.beepAudio = new Audio('./store-scanner-beep-90395.mp3');
-        this.beepAudio.volume = 0.7;
+        this.beepAudio.volume = 0.8;
         this.beepAudio.preload = 'auto';
         
-        // Intentar cargar el audio
+        // Eventos de carga del audio
+        this.beepAudio.addEventListener('loadstart', () => {
+            console.log('📡 Iniciando carga del archivo de audio...');
+        });
+        
+        this.beepAudio.addEventListener('loadeddata', () => {
+            console.log('📦 Datos del audio cargados');
+            this.audioLoaded = true;
+        });
+        
         this.beepAudio.addEventListener('canplaythrough', () => {
-            console.log('Audio del scanner cargado correctamente');
+            console.log('✅ Audio del scanner cargado completamente - Duración:', this.beepAudio.duration, 'segundos');
+            this.audioLoaded = true;
         });
         
         this.beepAudio.addEventListener('error', (e) => {
-            console.log('Error al cargar el audio del scanner, usando fallback:', e);
+            console.error('❌ Error al cargar el audio:', e);
+            console.error('❌ Error code:', this.beepAudio.error?.code);
+            console.error('❌ Error message:', this.beepAudio.error?.message);
+            console.log('🔄 Activando fallback de Web Audio API');
             this.useWebAudioFallback = true;
         });
+
+        // Intentar precargar
+        this.beepAudio.load();
+        
+        // Test de carga después de 2 segundos
+        setTimeout(() => {
+            if (!this.audioLoaded && !this.useWebAudioFallback) {
+                console.log('⚠️ El audio no se ha cargado después de 2 segundos, verificando...');
+                if (this.beepAudio.readyState < 2) {
+                    console.log('🔄 Audio no listo, activando fallback');
+                    this.useWebAudioFallback = true;
+                }
+            }
+        }, 2000);
     }
     
     static playBeep() {
+        console.log('🔊 Reproduciendo beep - Usando fallback:', this.useWebAudioFallback);
+        
         try {
-            if (this.beepAudio && !this.useWebAudioFallback) {
-                // Usar el archivo MP3 desde GitHub
+            if (this.beepAudio && this.audioLoaded && !this.useWebAudioFallback) {
+                console.log('🎵 Reproduciendo archivo MP3');
+                // Usar el archivo MP3
                 this.beepAudio.currentTime = 0;
-                this.beepAudio.play().catch(e => {
-                    console.log('Error reproduciendo MP3, usando fallback:', e);
-                    this.playWebAudioBeep();
-                });
+                const playPromise = this.beepAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            console.log('✅ MP3 reproducido exitosamente');
+                        })
+                        .catch(e => {
+                            console.error('❌ Error reproduciendo MP3:', e);
+                            console.log('🔄 Cambiando a fallback por error de reproducción');
+                            this.useWebAudioFallback = true;
+                            this.playWebAudioBeep();
+                        });
+                } else {
+                    console.log('✅ MP3 reproducido (navegador antiguo)');
+                }
             } else {
+                console.log('🎛️ Reproduciendo sonido generado (fallback)');
                 // Fallback a Web Audio API
                 this.playWebAudioBeep();
             }
         } catch (e) {
-            console.log('Error en playBeep:', e);
+            console.error('❌ Error general en playBeep:', e);
             this.playWebAudioBeep();
         }
     }
     
     static playWebAudioBeep() {
         try {
+            console.log('🎛️ Generando beep con Web Audio API');
             // Crear beep con Web Audio API como fallback
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -696,7 +743,7 @@ class SoundSystem {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (e) {
-            console.log('No se pudo reproducir el sonido fallback:', e);
+            console.log('❌ No se pudo reproducir el sonido fallback:', e);
         }
     }
     
@@ -709,6 +756,19 @@ class SoundSystem {
         } catch (e) {
             console.log('Error en playSuccessSound:', e);
         }
+    }
+    
+    // Método para probar el audio manualmente
+    static testAudio() {
+        console.log('🧪 Probando audio manualmente...');
+        console.log('Estado del audio:');
+        console.log('- audioLoaded:', this.audioLoaded);
+        console.log('- useWebAudioFallback:', this.useWebAudioFallback);
+        console.log('- readyState:', this.beepAudio?.readyState);
+        console.log('- duration:', this.beepAudio?.duration);
+        console.log('- src:', this.beepAudio?.src);
+        
+        this.playBeep();
     }
 }
 
