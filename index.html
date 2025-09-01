@@ -643,14 +643,49 @@ class SoundSystem {
     static init() {
         this.audioLoaded = false;
         this.audioElement = null;
+        this.userInteracted = false;
         
         console.log('🎵 Inicializando sistema de audio - SOLO MP3');
+        
+        // Detectar primera interacción del usuario
+        this.setupUserInteraction();
         
         // Crear múltiples instancias para mejor compatibilidad
         this.createAudioInstances();
         
         // Intentar cargar de diferentes maneras
         this.tryLoadAudio();
+    }
+    
+    static setupUserInteraction() {
+        // Detectar cuando el usuario hace clic en cualquier parte
+        const enableAudio = () => {
+            if (!this.userInteracted) {
+                this.userInteracted = true;
+                console.log('✅ Interacción del usuario detectada - Audio habilitado');
+                
+                // Crear contexto de audio si es necesario
+                if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!this.audioContext) {
+                        this.audioContext = new AudioCtx();
+                        if (this.audioContext.state === 'suspended') {
+                            this.audioContext.resume();
+                        }
+                    }
+                }
+                
+                // Pre-cargar el audio después de la interacción
+                if (this.beepAudio && this.audioLoaded) {
+                    this.beepAudio.load();
+                }
+            }
+        };
+        
+        // Escuchar múltiples eventos de interacción
+        ['click', 'touchstart', 'keydown'].forEach(event => {
+            document.addEventListener(event, enableAudio, { once: true });
+        });
     }
     
     static createAudioInstances() {
@@ -756,7 +791,13 @@ class SoundSystem {
     }
     
     static async playBeep() {
-        console.log('🔊 Reproduciendo beep - Estado cargado:', this.audioLoaded);
+        console.log('🔊 Reproduciendo beep - Estado cargado:', this.audioLoaded, '- Usuario interactuó:', this.userInteracted);
+        
+        // Verificar interacción del usuario
+        if (!this.userInteracted) {
+            console.log('⚠️ Esperando interacción del usuario para reproducir audio');
+            return;
+        }
         
         if (!this.audioLoaded || !this.beepAudio) {
             console.error('❌ AUDIO NO DISPONIBLE - El archivo MP3 no se ha cargado');
@@ -784,6 +825,9 @@ class SoundSystem {
             
             // Resetear el audio al inicio
             this.beepAudio.currentTime = 0;
+            
+            // Asegurar volumen
+            this.beepAudio.volume = 0.8;
             
             // Reproducir
             const playPromise = this.beepAudio.play();
@@ -830,6 +874,7 @@ class SoundSystem {
         console.log('🧪 === DIAGNÓSTICO DE AUDIO ===');
         console.log('Estado del sistema:');
         console.log('- audioLoaded:', this.audioLoaded);
+        console.log('- userInteracted:', this.userInteracted);
         console.log('- beepAudio existe:', !!this.beepAudio);
         console.log('- readyState:', this.beepAudio?.readyState);
         console.log('- duration:', this.beepAudio?.duration);
@@ -837,8 +882,13 @@ class SoundSystem {
         console.log('- volume:', this.beepAudio?.volume);
         console.log('===============================');
         
-        console.log('🎵 Probando reproducción...');
-        this.playBeep();
+        if (!this.userInteracted) {
+            console.log('⚠️ NOTA: Necesitas hacer clic en la página primero para habilitar audio');
+            console.log('🖱️ Haz clic en cualquier parte de la página y luego ejecuta: SoundSystem.testAudio()');
+        } else {
+            console.log('🎵 Probando reproducción...');
+            this.playBeep();
+        }
     }
 }
 
