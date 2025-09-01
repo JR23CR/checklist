@@ -409,6 +409,73 @@
             z-index: 10;
         }
 
+        /* Área de escaneo delimitada */
+        .scan-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 120px;
+            border: 3px solid #10b981;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            backdrop-filter: blur(2px);
+            box-shadow: 
+                0 0 0 2000px rgba(0, 0, 0, 0.6),
+                inset 0 0 20px rgba(16, 185, 129, 0.3);
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .scan-area::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid rgba(16, 185, 129, 0.8);
+            border-radius: 16px;
+            animation: scanPulse 2s infinite;
+        }
+
+        .scan-area::after {
+            content: 'ÁREA DE ESCANEO';
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #10b981;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        @keyframes scanPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Línea de escaneo animada */
+        .scan-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #10b981, transparent);
+            animation: scanLineMove 2s linear infinite;
+            z-index: 16;
+        }
+
+        @keyframes scanLineMove {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
         .camera-placeholder {
             position: absolute;
             top: 50%;
@@ -704,7 +771,11 @@
                             <i class="fas fa-camera"></i>
                             <div>Presiona "Activar Escáner" para comenzar</div>
                         </div>
-                        <div class="camera-overlay"></div>
+                        <div class="camera-overlay">
+                            <div class="scan-area" id="scan-area" style="display: none;">
+                                <div class="scan-line"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -754,6 +825,7 @@
             startButton: document.getElementById("start-button"),
             cameraContainer: document.getElementById("camera-container"),
             cameraPlaceholder: document.getElementById("camera-placeholder"),
+            scanArea: document.getElementById("scan-area"),
             fardosGrid: document.getElementById("fardos-grid"),
             scanNotification: document.getElementById("scan-notification"),
             connectionStatus: document.getElementById("connection-status"),
@@ -954,49 +1026,65 @@
             }
             
             static initBeepSound() {
-                try {
-                    // Crear audio element para reproducir el MP3
-                    beepAudio = new Audio('store-scanner-beep-90395.mp3');
-                    beepAudio.volume = 0.7; // Ajustar volumen (0.0 a 1.0)
-                    beepAudio.preload = 'auto';
-                    
-                    this.playBeep = () => {
-                        // Reiniciar el audio al principio si ya se está reproduciendo
+                // Crear un elemento de audio y configurarlo
+                beepAudio = document.createElement('audio');
+                beepAudio.src = 'store-scanner-beep-90395.mp3';
+                beepAudio.volume = 0.7;
+                beepAudio.preload = 'auto';
+                
+                // Agregar al DOM pero oculto
+                beepAudio.style.display = 'none';
+                document.body.appendChild(beepAudio);
+                
+                this.playBeep = () => {
+                    try {
                         beepAudio.currentTime = 0;
-                        beepAudio.play().catch(e => {
-                            console.log('No se pudo reproducir el sonido:', e);
-                        });
-                    };
-                } catch (e) {
-                    console.log('Error al cargar el archivo de audio:', e);
-                    // Fallback al beep original si el MP3 no se puede cargar
+                        const playPromise = beepAudio.play();
+                        
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log('Error reproduciendo audio MP3:', error);
+                                // Intentar con beep de fallback
+                                this.playFallbackBeep();
+                            });
+                        }
+                    } catch (error) {
+                        console.log('Error con audio MP3:', error);
+                        this.playFallbackBeep();
+                    }
+                };
+                
+                // Probar si el audio se puede cargar
+                beepAudio.addEventListener('canplaythrough', () => {
+                    console.log('Audio MP3 cargado correctamente');
+                });
+                
+                beepAudio.addEventListener('error', (e) => {
+                    console.log('Error cargando MP3, usando fallback:', e);
                     this.initFallbackBeep();
-                }
+                });
             }
 
-            static initFallbackBeep() {
+            static playFallbackBeep() {
+                // Beep de emergencia usando Web Audio API
                 try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
                     
-                    this.playBeep = () => {
-                        const oscillator = audioContext.createOscillator();
-                        const gainNode = audioContext.createGain();
-                        
-                        oscillator.connect(gainNode);
-                        gainNode.connect(audioContext.destination);
-                        
-                        oscillator.frequency.value = 800;
-                        oscillator.type = 'square';
-                        
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                        
-                        oscillator.start(audioContext.currentTime);
-                        oscillator.stop(audioContext.currentTime + 0.2);
-                    };
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'square';
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
                 } catch (e) {
-                    console.log('Web Audio API no disponible');
-                    this.playBeep = () => {};
+                    console.log('Error con Web Audio API también');
                 }
             }
             
@@ -1025,13 +1113,20 @@
                         },
                     },
                     decoder: {
-                        readers: ["code_128_reader", "ean_reader", "ean_8_reader"],
+                        readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"],
                     },
                     locator: {
                         patchSize: "medium",
                         halfSample: true,
                     },
                     locate: true,
+                    // Configurar área de detección específica
+                    area: {
+                        top: "25%",
+                        right: "25%", 
+                        left: "25%",
+                        bottom: "25%"
+                    }
                 }, (err) => {
                     if (err) {
                         console.error("Error al iniciar Quagga:", err);
@@ -1041,6 +1136,7 @@
                     }
 
                     elements.cameraPlaceholder.style.display = "none";
+                    elements.scanArea.style.display = "block";
                     
                     const video = elements.cameraContainer.querySelector("video");
                     const canvas = elements.cameraContainer.querySelector("canvas");
@@ -1053,9 +1149,32 @@
                     
                     elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
                     elements.startButton.className = "btn btn-success";
+                    elements.startButton.onclick = () => this.stopQuagga();
                     
-                    NotificationSystem.show('success', '✅ Escáner activado. Apunte la cámara hacia los códigos de barras.');
+                    NotificationSystem.show('success', '✅ Escáner activado. Coloque el código dentro del área verde.');
                 });
+            }
+
+            static stopQuagga() {
+                if (isQuaggaStarted) {
+                    Quagga.stop();
+                    isQuaggaStarted = false;
+                    
+                    elements.cameraPlaceholder.style.display = "block";
+                    elements.scanArea.style.display = "none";
+                    
+                    const video = elements.cameraContainer.querySelector("video");
+                    const canvas = elements.cameraContainer.querySelector("canvas");
+                    
+                    if (video) video.style.display = "none";
+                    if (canvas) canvas.style.display = "none";
+                    
+                    elements.startButton.innerHTML = '<i class="fas fa-camera"></i><span>Activar Escáner</span>';
+                    elements.startButton.className = "btn btn-danger";
+                    elements.startButton.onclick = () => this.handleStartScanner();
+                    
+                    NotificationSystem.show('warning', '⏹️ Escáner detenido.');
+                }
             }
             
             static showScanNotification(message, type = 'success') {
@@ -1068,6 +1187,37 @@
                     notification.style.display = 'none';
                 }, type === 'warning' ? 1500 : 2000);
             }
+        }
+
+        // Función para verificar si el código está dentro del área de escaneo
+        function isCodeInScanArea(codeResult) {
+            if (!codeResult || !codeResult.line || !codeResult.line.length) {
+                return false;
+            }
+            
+            const canvas = elements.cameraContainer.querySelector('canvas');
+            if (!canvas) return false;
+            
+            const canvasRect = canvas.getBoundingClientRect();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            // Definir área de escaneo (centro de la cámara)
+            const scanAreaWidth = canvasWidth * 0.6; // 60% del ancho
+            const scanAreaHeight = canvasHeight * 0.4; // 40% del alto
+            const scanAreaX = (canvasWidth - scanAreaWidth) / 2;
+            const scanAreaY = (canvasHeight - scanAreaHeight) / 2;
+            
+            // Obtener el centro del código detectado
+            const line = codeResult.line;
+            const centerX = (line[0].x + line[1].x) / 2;
+            const centerY = (line[0].y + line[1].y) / 2;
+            
+            // Verificar si el centro está dentro del área de escaneo
+            return (centerX >= scanAreaX && 
+                   centerX <= scanAreaX + scanAreaWidth &&
+                   centerY >= scanAreaY && 
+                   centerY <= scanAreaY + scanAreaHeight);
         }
 
         // Inicialización de eventos Quagga
@@ -1103,9 +1253,12 @@
                 }
 
                 if (result.box) {
+                    // Verificar si el código está en el área de escaneo
+                    const inScanArea = result.codeResult && isCodeInScanArea(result.codeResult);
+                    
                     drawingCtx.lineWidth = 4;
-                    drawingCtx.strokeStyle = "#10b981";
-                    drawingCtx.fillStyle = "rgba(16, 185, 129, 0.2)";
+                    drawingCtx.strokeStyle = inScanArea ? "#10b981" : "#f59e0b";
+                    drawingCtx.fillStyle = inScanArea ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)";
                     drawingCtx.beginPath();
                     result.box.forEach((point, index) => {
                         if (index === 0) {
@@ -1124,6 +1277,11 @@
         Quagga.onDetected(function (result) {
             const code = result.codeResult.code.trim();
             const now = Date.now();
+
+            // Verificar si el código está dentro del área de escaneo
+            if (!isCodeInScanArea(result.codeResult)) {
+                return; // Ignorar códigos fuera del área
+            }
 
             // Evitar detecciones duplicadas muy rápidas
             if (code === lastDetectedCode && now - lastDetectedTime < 1500) {
