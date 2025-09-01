@@ -618,7 +618,6 @@ margin-right: 10px;
 </head>
 <body>
 <div class="app-container">
-<!-- Header profesional -->
 <header class="app-header">
 <div class="version">v2.1.0</div>
 <div class="connection-status" id="connection-status"></div>
@@ -632,12 +631,10 @@ margin-right: 10px;
 </header>
 
 <main class="main-content">
-<!-- Sistema de alertas -->
 <div class="alert alert-error" id="alert-error"></div>
 <div class="alert alert-success" id="alert-success"></div>
 <div class="alert alert-warning" id="alert-warning"></div>
 
-<!-- Configuración del sistema -->
 <div class="card">
 <div class="card-header">
 <i class="fas fa-cog"></i>
@@ -658,7 +655,6 @@ Configuración del Sistema
 </div>
 </div>
 
-<!-- Dashboard de métricas -->
 <div class="card">
 <div class="card-header">
 <i class="fas fa-chart-bar"></i>
@@ -692,7 +688,6 @@ Panel de Control
 </div>
 </div>
 
-<!-- Cámara del escáner -->
 <div class="card">
 <div class="card-header">
 <i class="fas fa-qrcode"></i>
@@ -709,7 +704,6 @@ Escáner de Códigos de Barras
 </div>
 </div>
 
-<!-- Lista de paquetes -->
 <div class="card">
 <div class="card-header">
 <i class="fas fa-list-check"></i>
@@ -727,7 +721,6 @@ Carga un archivo Excel para mostrar los paquetes
 </div>
 </main>
 
-<!-- Footer de la app -->
 <footer class="app-footer">
 <div class="status">
 <i class="fas fa-shield-check"></i>
@@ -736,7 +729,6 @@ Sistema Activo
 <div>© 2024 KALAF SOFT</div>
 </footer>
 
-<!-- Notificación de escaneo -->
 <div class="scan-notification" id="scan-notification"></div>
 </div>
 
@@ -954,29 +946,25 @@ this.initBeepSound();
 }
 
 static initBeepSound() {
-try {
-                    // Crear un beep usando Web Audio API
-                    // Crear audio element para reproducir el MP3
-                    beepAudio = new Audio('store-scanner-beep-90395.mp3');
-                    beepAudio.volume = 0.7; // Ajustar volumen (0.0 a 1.0)
-                    beepAudio.preload = 'auto';
-                    
-                    this.playBeep = () => {
-                        // Reiniciar el audio al principio si ya se está reproduciendo
-                        beepAudio.currentTime = 0;
-                        beepAudio.play().catch(e => {
-                            console.log('No se pudo reproducir el sonido:', e);
-                        });
-                    };
-                } catch (e) {
-                    console.log('Error al cargar el archivo de audio:', e);
-                    // Fallback al beep original si el MP3 no se puede cargar
-                    this.initFallbackBeep();
-                }
-            }
+    try {
+        beepAudio = new Audio('store-scanner-beep-90395.mp3');
+        beepAudio.volume = 0.7;
+        beepAudio.preload = 'auto';
+        
+        this.playBeep = () => {
+            beepAudio.currentTime = 0;
+            beepAudio.play().catch(e => {
+                console.log('No se pudo reproducir el sonido:', e);
+            });
+        };
+    } catch (e) {
+        console.log('Error al cargar el archivo de audio:', e);
+        this.initFallbackBeep();
+    }
+}
 
-            static initFallbackBeep() {
-                try {
+static initFallbackBeep() {
+try {
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 this.playBeep = () => {
@@ -1076,50 +1064,64 @@ let lastDetectedCode = null;
 let lastDetectedTime = 0;
 
 Quagga.onProcessed(function (result) {
-const drawingCtx = Quagga.canvas.ctx.overlay;
-const drawingCanvas = Quagga.canvas.dom.overlay;
+    const drawingCtx = Quagga.canvas.ctx.overlay;
+    const drawingCanvas = Quagga.canvas.dom.overlay;
 
-if (!drawingCtx || !drawingCanvas) return;
+    if (!drawingCtx || !drawingCanvas) return;
 
-drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    // Limpiar el lienzo para evitar dibujar sobre frames anteriores
+    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
-if (result) {
-if (result.boxes) {
-result.boxes
-.filter((box) => box !== result.box)
-.forEach((box) => {
-drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-drawingCtx.lineWidth = 2;
-drawingCtx.beginPath();
-box.forEach((point, index) => {
-if (index === 0) {
-drawingCtx.moveTo(point[0], point[1]);
-} else {
-drawingCtx.lineTo(point[0], point[1]);
-}
-});
-drawingCtx.closePath();
-drawingCtx.stroke();
-});
-}
+    // Dibuja el marco de enfoque estático
+    const frameWidth = drawingCanvas.width * 0.7; // 70% del ancho del lienzo
+    const frameHeight = drawingCanvas.height * 0.3; // 30% de la altura del lienzo
+    const x = (drawingCanvas.width - frameWidth) / 2;
+    const y = (drawingCanvas.height - frameHeight) / 2;
 
-if (result.box) {
-drawingCtx.lineWidth = 4;
-drawingCtx.strokeStyle = "#10b981";
-drawingCtx.fillStyle = "rgba(16, 185, 129, 0.2)";
-drawingCtx.beginPath();
-result.box.forEach((point, index) => {
-if (index === 0) {
-drawingCtx.moveTo(point[0], point[1]);
-} else {
-drawingCtx.lineTo(point[0], point[1]);
-}
-});
-drawingCtx.closePath();
-drawingCtx.fill();
-drawingCtx.stroke();
-}
-}
+    drawingCtx.strokeStyle = "rgba(16, 185, 129, 0.7)"; // Verde semi-transparente
+    drawingCtx.lineWidth = 4;
+    drawingCtx.strokeRect(x, y, frameWidth, frameHeight);
+    
+    // Si se detecta un resultado, dibuja los recuadros
+    if (result) {
+        // Dibuja todos los recuadros de detección (semi-transparentes)
+        if (result.boxes) {
+            result.boxes
+                .filter((box) => box !== result.box)
+                .forEach((box) => {
+                    drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+                    drawingCtx.lineWidth = 2;
+                    drawingCtx.beginPath();
+                    box.forEach((point, index) => {
+                        if (index === 0) {
+                            drawingCtx.moveTo(point[0], point[1]);
+                        } else {
+                            drawingCtx.lineTo(point[0], point[1]);
+                        }
+                    });
+                    drawingCtx.closePath();
+                    drawingCtx.stroke();
+                });
+        }
+
+        // Dibuja el recuadro principal de detección (verde sólido)
+        if (result.box) {
+            drawingCtx.lineWidth = 4;
+            drawingCtx.strokeStyle = "#10b981";
+            drawingCtx.fillStyle = "rgba(16, 185, 129, 0.2)";
+            drawingCtx.beginPath();
+            result.box.forEach((point, index) => {
+                if (index === 0) {
+                    drawingCtx.moveTo(point[0], point[1]);
+                } else {
+                    drawingCtx.lineTo(point[0], point[1]);
+                }
+            });
+            drawingCtx.closePath();
+            drawingCtx.fill();
+            drawingCtx.stroke();
+        }
+    }
 });
 
 Quagga.onDetected(function (result) {
