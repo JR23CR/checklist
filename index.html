@@ -659,17 +659,25 @@ class SoundSystem {
         this.beepAudio.preload = 'auto';
         this.beepAudio.volume = 0.8;
         
-        // Intentar diferentes rutas
+        // Rutas para GitHub y local
         const possiblePaths = [
+            // Para GitHub Pages y repositorio
             './store-scanner-beep-90395.mp3',
             'store-scanner-beep-90395.mp3',
-            '/store-scanner-beep-90395.mp3'
+            '/store-scanner-beep-90395.mp3',
+            // Para acceso directo en GitHub (raw)
+            `${window.location.origin}${window.location.pathname.replace('index.html', '')}store-scanner-beep-90395.mp3`,
+            // Ruta relativa más específica
+            `${window.location.href.replace(/\/[^\/]*$/, '')}/store-scanner-beep-90395.mp3`
         ];
+        
+        console.log('🔍 Rutas a probar:', possiblePaths);
         
         this.audioInstances = possiblePaths.map(path => {
             const audio = new Audio(path);
             audio.preload = 'auto';
             audio.volume = 0.8;
+            audio.crossOrigin = "anonymous"; // Para GitHub
             return { audio, path };
         });
     }
