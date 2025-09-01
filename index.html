@@ -638,136 +638,198 @@ alertSuccess: document.getElementById("alert-success"),
 alertWarning: document.getElementById("alert-warning")
 };
 
-// Sistema de sonido mejorado
+// Sistema de sonido mejorado - SOLO MP3, SIN FALLBACK
 class SoundSystem {
     static init() {
-        this.useWebAudioFallback = false;
         this.audioLoaded = false;
+        this.audioElement = null;
         
-        // Inicializar el audio del beep desde la misma carpeta
-        this.beepAudio = new Audio('./store-scanner-beep-90395.mp3');
-        this.beepAudio.volume = 0.8;
+        console.log('🎵 Inicializando sistema de audio - SOLO MP3');
+        
+        // Crear múltiples instancias para mejor compatibilidad
+        this.createAudioInstances();
+        
+        // Intentar cargar de diferentes maneras
+        this.tryLoadAudio();
+    }
+    
+    static createAudioInstances() {
+        // Crear el elemento de audio principal
+        this.beepAudio = new Audio();
         this.beepAudio.preload = 'auto';
+        this.beepAudio.volume = 0.8;
         
-        // Eventos de carga del audio
-        this.beepAudio.addEventListener('loadstart', () => {
-            console.log('📡 Iniciando carga del archivo de audio...');
+        // Intentar diferentes rutas
+        const possiblePaths = [
+            './store-scanner-beep-90395.mp3',
+            'store-scanner-beep-90395.mp3',
+            '/store-scanner-beep-90395.mp3'
+        ];
+        
+        this.audioInstances = possiblePaths.map(path => {
+            const audio = new Audio(path);
+            audio.preload = 'auto';
+            audio.volume = 0.8;
+            return { audio, path };
+        });
+    }
+    
+    static tryLoadAudio() {
+        console.log('🔄 Intentando cargar archivo de audio...');
+        
+        // Probar cada instancia
+        this.audioInstances.forEach((instance, index) => {
+            const { audio, path } = instance;
+            
+            audio.addEventListener('loadeddata', () => {
+                if (!this.audioLoaded) {
+                    console.log(`✅ Audio cargado exitosamente desde: ${path}`);
+                    this.beepAudio = audio;
+                    this.audioLoaded = true;
+                    this.audioElement = audio;
+                }
+            });
+            
+            audio.addEventListener('canplaythrough', () => {
+                if (!this.audioLoaded) {
+                    console.log(`✅ Audio listo para reproducir desde: ${path} - Duración: ${audio.duration}s`);
+                    this.beepAudio = audio;
+                    this.audioLoaded = true;
+                    this.audioElement = audio;
+                }
+            });
+            
+            audio.addEventListener('error', (e) => {
+                console.log(`❌ Error cargando desde ${path}:`, e);
+            });
+            
+            // Cargar el audio
+            audio.load();
         });
         
-        this.beepAudio.addEventListener('loadeddata', () => {
-            console.log('📦 Datos del audio cargados');
-            this.audioLoaded = true;
-        });
-        
-        this.beepAudio.addEventListener('canplaythrough', () => {
-            console.log('✅ Audio del scanner cargado completamente - Duración:', this.beepAudio.duration, 'segundos');
-            this.audioLoaded = true;
-        });
-        
-        this.beepAudio.addEventListener('error', (e) => {
-            console.error('❌ Error al cargar el audio:', e);
-            console.error('❌ Error code:', this.beepAudio.error?.code);
-            console.error('❌ Error message:', this.beepAudio.error?.message);
-            console.log('🔄 Activando fallback de Web Audio API');
-            this.useWebAudioFallback = true;
-        });
-
-        // Intentar precargar
-        this.beepAudio.load();
-        
-        // Test de carga después de 2 segundos
+        // Verificar carga después de 3 segundos
         setTimeout(() => {
-            if (!this.audioLoaded && !this.useWebAudioFallback) {
-                console.log('⚠️ El audio no se ha cargado después de 2 segundos, verificando...');
-                if (this.beepAudio.readyState < 2) {
-                    console.log('🔄 Audio no listo, activando fallback');
-                    this.useWebAudioFallback = true;
-                }
+            if (!this.audioLoaded) {
+                console.log('⚠️ Reintentando carga de audio...');
+                this.forceLoadAudio();
             }
-        }, 2000);
+        }, 3000);
+        
+        // Verificar nuevamente después de 6 segundos
+        setTimeout(() => {
+            if (!this.audioLoaded) {
+                console.error('❌ ERROR CRÍTICO: No se pudo cargar el archivo de audio después de múltiples intentos');
+                console.log('📁 Verifica que el archivo store-scanner-beep-90395.mp3 esté en la misma carpeta que index.html');
+                console.log('🌐 Asegúrate de estar ejecutando desde un servidor web, no file://');
+            }
+        }, 6000);
     }
     
-    static playBeep() {
-        console.log('🔊 Reproduciendo beep - Usando fallback:', this.useWebAudioFallback);
+    static forceLoadAudio() {
+        console.log('🚀 Forzando carga de audio...');
+        
+        // Crear una nueva instancia con evento de usuario
+        const newAudio = new Audio('./store-scanner-beep-90395.mp3');
+        newAudio.volume = 0.8;
+        
+        // Intentar cargar inmediatamente
+        const loadPromise = newAudio.load();
+        
+        newAudio.addEventListener('loadeddata', () => {
+            console.log('✅ Audio forzado cargado exitosamente');
+            this.beepAudio = newAudio;
+            this.audioLoaded = true;
+            this.audioElement = newAudio;
+        });
+        
+        newAudio.addEventListener('error', (e) => {
+            console.error('❌ Error en carga forzada:', e);
+        });
+    }
+    
+    static async playBeep() {
+        console.log('🔊 Reproduciendo beep - Estado cargado:', this.audioLoaded);
+        
+        if (!this.audioLoaded || !this.beepAudio) {
+            console.error('❌ AUDIO NO DISPONIBLE - El archivo MP3 no se ha cargado');
+            console.log('🔧 Intentando cargar audio de emergencia...');
+            
+            // Intentar crear y reproducir inmediatamente
+            const emergencyAudio = new Audio('./store-scanner-beep-90395.mp3');
+            emergencyAudio.volume = 0.8;
+            
+            try {
+                const playPromise = emergencyAudio.play();
+                if (playPromise !== undefined) {
+                    await playPromise;
+                    console.log('✅ Audio de emergencia reproducido');
+                    return;
+                }
+            } catch (e) {
+                console.error('❌ Falló audio de emergencia:', e);
+                return;
+            }
+        }
         
         try {
-            if (this.beepAudio && this.audioLoaded && !this.useWebAudioFallback) {
-                console.log('🎵 Reproduciendo archivo MP3');
-                // Usar el archivo MP3
-                this.beepAudio.currentTime = 0;
-                const playPromise = this.beepAudio.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise
-                        .then(() => {
-                            console.log('✅ MP3 reproducido exitosamente');
-                        })
-                        .catch(e => {
-                            console.error('❌ Error reproduciendo MP3:', e);
-                            console.log('🔄 Cambiando a fallback por error de reproducción');
-                            this.useWebAudioFallback = true;
-                            this.playWebAudioBeep();
-                        });
-                } else {
-                    console.log('✅ MP3 reproducido (navegador antiguo)');
-                }
+            console.log('🎵 Reproduciendo archivo MP3 principal');
+            
+            // Resetear el audio al inicio
+            this.beepAudio.currentTime = 0;
+            
+            // Reproducir
+            const playPromise = this.beepAudio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        console.log('✅ MP3 reproducido exitosamente');
+                    })
+                    .catch(async (e) => {
+                        console.error('❌ Error reproduciendo MP3:', e);
+                        console.log('🔄 Reintentando reproducción...');
+                        
+                        // Reintentar una vez más
+                        try {
+                            this.beepAudio.load();
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            this.beepAudio.currentTime = 0;
+                            await this.beepAudio.play();
+                            console.log('✅ MP3 reproducido en reintento');
+                        } catch (retryError) {
+                            console.error('❌ Error en reintento:', retryError);
+                        }
+                    });
             } else {
-                console.log('🎛️ Reproduciendo sonido generado (fallback)');
-                // Fallback a Web Audio API
-                this.playWebAudioBeep();
+                console.log('✅ MP3 reproducido (navegador antiguo)');
             }
+            
         } catch (e) {
-            console.error('❌ Error general en playBeep:', e);
-            this.playWebAudioBeep();
-        }
-    }
-    
-    static playWebAudioBeep() {
-        try {
-            console.log('🎛️ Generando beep con Web Audio API');
-            // Crear beep con Web Audio API como fallback
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.type = 'square';
-
-            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
-        } catch (e) {
-            console.log('❌ No se pudo reproducir el sonido fallback:', e);
+            console.error('❌ Error crítico reproduciendo audio:', e);
         }
     }
     
     static playSuccessSound() {
-        try {
-            // Para el sonido de éxito, usar el mismo beep 3 veces
-            this.playBeep();
-            setTimeout(() => this.playBeep(), 150);
-            setTimeout(() => this.playBeep(), 300);
-        } catch (e) {
-            console.log('Error en playSuccessSound:', e);
-        }
+        console.log('🎉 Reproduciendo sonido de éxito (3 beeps)');
+        
+        // Reproducir 3 veces con intervalos
+        this.playBeep();
+        setTimeout(() => this.playBeep(), 200);
+        setTimeout(() => this.playBeep(), 400);
     }
     
-    // Método para probar el audio manualmente
     static testAudio() {
-        console.log('🧪 Probando audio manualmente...');
-        console.log('Estado del audio:');
+        console.log('🧪 === DIAGNÓSTICO DE AUDIO ===');
+        console.log('Estado del sistema:');
         console.log('- audioLoaded:', this.audioLoaded);
-        console.log('- useWebAudioFallback:', this.useWebAudioFallback);
+        console.log('- beepAudio existe:', !!this.beepAudio);
         console.log('- readyState:', this.beepAudio?.readyState);
         console.log('- duration:', this.beepAudio?.duration);
         console.log('- src:', this.beepAudio?.src);
+        console.log('- volume:', this.beepAudio?.volume);
+        console.log('===============================');
         
+        console.log('🎵 Probando reproducción...');
         this.playBeep();
     }
 }
