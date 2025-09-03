@@ -213,6 +213,8 @@ cursor: pointer;
 transition: var(--transition);
 font-size: 1rem;
 box-shadow: var(--shadow);
+margin-right: 0.5rem;
+margin-bottom: 0.5rem;
 }
 
 .btn:disabled {
@@ -253,91 +255,36 @@ color: white;
 background: var(--warning-light);
 }
 
-/* NUEVOS CONTROLES DE CÁMARA */
-.camera-controls {
-display: flex;
-gap: 1rem;
-margin-bottom: 1rem;
-flex-wrap: wrap;
-align-items: center;
-}
-
-.brightness-control, .contrast-control {
-display: flex;
-align-items: center;
-gap: 0.5rem;
-}
-
-.brightness-control label, .contrast-control label {
-font-size: 0.9rem;
-font-weight: 500;
-min-width: 80px;
-}
-
-.brightness-slider, .contrast-slider {
-width: 150px;
-height: 6px;
-border-radius: 3px;
-background: #e5e7eb;
-outline: none;
--webkit-appearance: none;
-}
-
-.brightness-slider::-webkit-slider-thumb, .contrast-slider::-webkit-slider-thumb {
-appearance: none;
-width: 20px;
-height: 20px;
-border-radius: 50%;
-background: var(--primary-color);
-cursor: pointer;
-box-shadow: var(--shadow);
-}
-
-.brightness-slider::-moz-range-thumb, .contrast-slider::-moz-range-thumb {
-width: 20px;
-height: 20px;
-border-radius: 50%;
-background: var(--primary-color);
-cursor: pointer;
-border: none;
-box-shadow: var(--shadow);
-}
-
-.torch-toggle {
+.btn-small {
 padding: 0.5rem 1rem;
 font-size: 0.9rem;
 }
 
-.detection-info {
-background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-border: 1px solid #bfdbfe;
+/* Controles simples para poca luz */
+.light-controls {
+display: none;
+background: #f8fafc;
+border: 1px solid #e2e8f0;
 border-radius: var(--border-radius);
 padding: 1rem;
 margin-bottom: 1rem;
-display: none;
 }
 
-.detection-stats {
-display: flex;
-gap: 1rem;
-font-size: 0.9rem;
+.light-controls.show {
+display: block;
 }
 
-.stat-item {
+.light-controls h4 {
+margin: 0 0 0.75rem 0;
+color: var(--dark-color);
+font-size: 1rem;
+}
+
+.control-group {
 display: flex;
-flex-direction: column;
+gap: 0.5rem;
+flex-wrap: wrap;
 align-items: center;
-}
-
-.stat-value {
-font-weight: 700;
-font-size: 1.2rem;
-color: var(--primary-color);
-}
-
-.stat-label {
-color: #6b7280;
-font-size: 0.8rem;
 }
 
 .metrics-grid {
@@ -431,6 +378,10 @@ aspect-ratio: 16/9;
 max-height: 400px;
 }
 
+.camera-container.enhanced {
+filter: brightness(1.3) contrast(1.4);
+}
+
 .camera-placeholder {
 display: flex;
 flex-direction: column;
@@ -463,20 +414,6 @@ top: 0;
 left: 0;
 width: 100% !important;
 height: 100% !important;
-}
-
-/* FILTROS DE IMAGEN MEJORADOS */
-.camera-container video {
-filter: brightness(var(--camera-brightness, 1)) contrast(var(--camera-contrast, 1));
-transition: filter 0.3s ease;
-}
-
-.camera-container.low-light video {
-filter: brightness(1.4) contrast(1.6) saturate(0.8);
-}
-
-.camera-container.enhanced video {
-filter: brightness(1.2) contrast(1.4) saturate(1.1) hue-rotate(5deg);
 }
 
 .fardos-grid {
@@ -591,12 +528,8 @@ grid-template-columns: 1fr;
 grid-template-columns: 1fr;
 }
 
-.camera-controls {
+.control-group {
 justify-content: center;
-}
-
-.brightness-slider, .contrast-slider {
-width: 120px;
 }
 }
 </style>
@@ -605,13 +538,13 @@ width: 120px;
 <div class="app-container">
 <!-- Header profesional -->
 <header class="app-header">
-<div class="version">v2.2.0</div>
+<div class="version">v2.1.1</div>
 <div class="connection-status" id="connection-status"></div>
 <div class="logo-section">
 <div class="logo">📋</div>
 <div class="company-info">
 <h1>KALAF SOFT</h1>
-<p>Sistema Check List de Paquetes de Piso - Mejorado</p>
+<p>Sistema Check List de Paquetes de Piso</p>
 </div>
 </div>
 </header>
@@ -681,46 +614,22 @@ Panel de Control
 <div class="card">
 <div class="card-header">
 <i class="fas fa-qrcode"></i>
-Escáner de Códigos de Barras - Optimizado para Poca Luz
+Escáner de Códigos de Barras
 </div>
 <div class="card-body">
-<!-- NUEVOS CONTROLES DE CÁMARA -->
-<div class="camera-controls" id="camera-controls" style="display: none;">
-<div class="brightness-control">
-<label>Brillo:</label>
-<input type="range" id="brightness-slider" class="brightness-slider" min="0.5" max="2" step="0.1" value="1">
-<span id="brightness-value">100%</span>
-</div>
-<div class="contrast-control">
-<label>Contraste:</label>
-<input type="range" id="contrast-slider" class="contrast-slider" min="0.5" max="3" step="0.1" value="1">
-<span id="contrast-value">100%</span>
-</div>
-<button id="torch-toggle" class="btn btn-warning torch-toggle" style="display: none;">
-<i class="fas fa-lightbulb"></i>
-<span>Flash</span>
+<!-- Controles simples para poca luz -->
+<div class="light-controls" id="light-controls">
+<h4><i class="fas fa-adjust"></i> Mejoras para Poca Luz</h4>
+<div class="control-group">
+<button id="enhance-btn" class="btn btn-warning btn-small">
+<i class="fas fa-sun"></i> Mejorar Brillo
 </button>
-<button id="auto-enhance" class="btn btn-success">
-<i class="fas fa-magic"></i>
-<span>Auto Mejorar</span>
+<button id="torch-btn" class="btn btn-warning btn-small" style="display: none;">
+<i class="fas fa-flashlight"></i> Flash
 </button>
-</div>
-
-<!-- Información de detección -->
-<div class="detection-info" id="detection-info">
-<div class="detection-stats">
-<div class="stat-item">
-<div class="stat-value" id="detection-rate">0</div>
-<div class="stat-label">Detecciones/min</div>
-</div>
-<div class="stat-item">
-<div class="stat-value" id="light-level">?</div>
-<div class="stat-label">Nivel de Luz</div>
-</div>
-<div class="stat-item">
-<div class="stat-value" id="quality-score">?</div>
-<div class="stat-label">Calidad</div>
-</div>
+<button id="reset-btn" class="btn btn-success btn-small">
+<i class="fas fa-refresh"></i> Normal
+</button>
 </div>
 </div>
 
@@ -728,9 +637,6 @@ Escáner de Códigos de Barras - Optimizado para Poca Luz
 <div class="camera-placeholder" id="camera-placeholder">
 <i class="fas fa-camera"></i>
 <div>Presiona "Activar Escáner" para comenzar</div>
-<div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">
-Optimizado para detección en poca luz
-</div>
 </div>
 <div class="camera-overlay"></div>
 </div>
@@ -759,7 +665,7 @@ Carga un archivo Excel para mostrar los paquetes
 <footer class="app-footer">
 <div class="status">
 <i class="fas fa-shield-check"></i>
-Sistema Activo - Modo Poca Luz
+Sistema Activo
 </div>
 <div>© 2024 KALAF SOFT</div>
 </footer>
@@ -774,12 +680,8 @@ let fardos = [];
 let isQuaggaStarted = false;
 let systemReady = false;
 let currentTrack = null;
-let detectionStats = {
-    detections: 0,
-    lastDetectionTime: 0,
-    lightLevel: 'unknown',
-    qualityScore: 'unknown'
-};
+let enhanced = false;
+let torchEnabled = false;
 
 // Referencias a elementos DOM
 const elements = {
@@ -805,18 +707,11 @@ alertError: document.getElementById("alert-error"),
 alertSuccess: document.getElementById("alert-success"),
 alertWarning: document.getElementById("alert-warning"),
 
-// NUEVOS CONTROLES
-cameraControls: document.getElementById("camera-controls"),
-brightnessSlider: document.getElementById("brightness-slider"),
-contrastSlider: document.getElementById("contrast-slider"),
-brightnessValue: document.getElementById("brightness-value"),
-contrastValue: document.getElementById("contrast-value"),
-torchToggle: document.getElementById("torch-toggle"),
-autoEnhance: document.getElementById("auto-enhance"),
-detectionInfo: document.getElementById("detection-info"),
-detectionRate: document.getElementById("detection-rate"),
-lightLevel: document.getElementById("light-level"),
-qualityScore: document.getElementById("quality-score")
+// Controles de luz
+lightControls: document.getElementById("light-controls"),
+enhanceBtn: document.getElementById("enhance-btn"),
+torchBtn: document.getElementById("torch-btn"),
+resetBtn: document.getElementById("reset-btn")
 };
 
 // Sistema de sonido mejorado - SOLO MP3, SIN FALLBACK
@@ -1073,178 +968,6 @@ class SoundSystem {
     }
 }
 
-// NUEVO: Sistema de mejora de cámara para poca luz
-class CameraEnhancementSystem {
-    static init() {
-        this.setupControls();
-        this.brightness = 1;
-        this.contrast = 1;
-        this.torchSupported = false;
-        this.torchEnabled = false;
-        this.autoEnhanceEnabled = false;
-        
-        console.log('📸 Sistema de mejora de cámara inicializado');
-    }
-    
-    static setupControls() {
-        // Control de brillo
-        elements.brightnessSlider.addEventListener('input', (e) => {
-            this.brightness = parseFloat(e.target.value);
-            this.updateCameraFilters();
-            elements.brightnessValue.textContent = Math.round(this.brightness * 100) + '%';
-        });
-        
-        // Control de contraste
-        elements.contrastSlider.addEventListener('input', (e) => {
-            this.contrast = parseFloat(e.target.value);
-            this.updateCameraFilters();
-            elements.contrastValue.textContent = Math.round(this.contrast * 100) + '%';
-        });
-        
-        // Toggle de flash/torch
-        elements.torchToggle.addEventListener('click', () => {
-            this.toggleTorch();
-        });
-        
-        // Auto mejora
-        elements.autoEnhance.addEventListener('click', () => {
-            this.autoEnhance();
-        });
-    }
-    
-    static updateCameraFilters() {
-        const container = elements.cameraContainer;
-        container.style.setProperty('--camera-brightness', this.brightness);
-        container.style.setProperty('--camera-contrast', this.contrast);
-        
-        console.log(`📸 Filtros actualizados - Brillo: ${this.brightness}, Contraste: ${this.contrast}`);
-    }
-    
-    static async enableTorch() {
-        if (!currentTrack) return false;
-        
-        try {
-            const capabilities = currentTrack.getCapabilities();
-            if (capabilities.torch) {
-                await currentTrack.applyConstraints({
-                    advanced: [{ torch: true }]
-                });
-                this.torchEnabled = true;
-                elements.torchToggle.innerHTML = '<i class="fas fa-lightbulb"></i><span>Flash ON</span>';
-                elements.torchToggle.classList.remove('btn-warning');
-                elements.torchToggle.classList.add('btn-success');
-                console.log('🔦 Flash activado');
-                return true;
-            }
-        } catch (e) {
-            console.error('❌ Error activando flash:', e);
-        }
-        return false;
-    }
-    
-    static async disableTorch() {
-        if (!currentTrack) return;
-        
-        try {
-            await currentTrack.applyConstraints({
-                advanced: [{ torch: false }]
-            });
-            this.torchEnabled = false;
-            elements.torchToggle.innerHTML = '<i class="fas fa-lightbulb"></i><span>Flash</span>';
-            elements.torchToggle.classList.remove('btn-success');
-            elements.torchToggle.classList.add('btn-warning');
-            console.log('🔦 Flash desactivado');
-        } catch (e) {
-            console.error('❌ Error desactivando flash:', e);
-        }
-    }
-    
-    static async toggleTorch() {
-        if (this.torchEnabled) {
-            await this.disableTorch();
-        } else {
-            await this.enableTorch();
-        }
-    }
-    
-    static autoEnhance() {
-        this.autoEnhanceEnabled = !this.autoEnhanceEnabled;
-        
-        if (this.autoEnhanceEnabled) {
-            // Configuración optimizada para poca luz
-            this.brightness = 1.3;
-            this.contrast = 1.5;
-            
-            elements.brightnessSlider.value = this.brightness;
-            elements.contrastSlider.value = this.contrast;
-            elements.brightnessValue.textContent = Math.round(this.brightness * 100) + '%';
-            elements.contrastValue.textContent = Math.round(this.contrast * 100) + '%';
-            
-            // Aplicar clase especial
-            elements.cameraContainer.classList.add('low-light');
-            
-            elements.autoEnhance.innerHTML = '<i class="fas fa-magic"></i><span>Auto ON</span>';
-            elements.autoEnhance.classList.remove('btn-success');
-            elements.autoEnhance.classList.add('btn-warning');
-            
-            NotificationSystem.show('success', '✨ Modo poca luz activado - Mejor detección en ambientes oscuros', 3000);
-        } else {
-            // Restaurar valores normales
-            this.brightness = 1;
-            this.contrast = 1;
-            
-            elements.brightnessSlider.value = this.brightness;
-            elements.contrastSlider.value = this.contrast;
-            elements.brightnessValue.textContent = '100%';
-            elements.contrastValue.textContent = '100%';
-            
-            elements.cameraContainer.classList.remove('low-light');
-            
-            elements.autoEnhance.innerHTML = '<i class="fas fa-magic"></i><span>Auto Mejorar</span>';
-            elements.autoEnhance.classList.remove('btn-warning');
-            elements.autoEnhance.classList.add('btn-success');
-        }
-        
-        this.updateCameraFilters();
-    }
-    
-    static checkTorchSupport() {
-        if (!currentTrack) return false;
-        
-        try {
-            const capabilities = currentTrack.getCapabilities();
-            this.torchSupported = !!capabilities.torch;
-            
-            if (this.torchSupported) {
-                elements.torchToggle.style.display = 'block';
-                console.log('🔦 Flash soportado por el dispositivo');
-            } else {
-                elements.torchToggle.style.display = 'none';
-                console.log('❌ Flash no soportado por el dispositivo');
-            }
-            
-            return this.torchSupported;
-        } catch (e) {
-            console.error('Error verificando soporte de flash:', e);
-            return false;
-        }
-    }
-    
-    static updateDetectionStats(lightLevel, qualityScore) {
-        detectionStats.lightLevel = lightLevel;
-        detectionStats.qualityScore = qualityScore;
-        
-        elements.lightLevel.textContent = lightLevel;
-        elements.qualityScore.textContent = qualityScore;
-        
-        // Auto-activar modo poca luz si la iluminación es baja
-        if (lightLevel === 'Baja' && !this.autoEnhanceEnabled) {
-            console.log('💡 Luz baja detectada - Activando mejoras automáticamente');
-            setTimeout(() => this.autoEnhance(), 1000);
-        }
-    }
-}
-
 // Sistema de notificaciones
 class NotificationSystem {
     static show(type, message, duration = 5000) {
@@ -1290,27 +1013,10 @@ class MetricsSystem {
         // Actualizar estado de conexión
         elements.connectionStatus.className = systemReady ? 'connection-status' : 'connection-status offline';
 
-        // Actualizar tasa de detección
-        this.updateDetectionRate();
-
         // Verificar completado
         if (total > 0 && completed === total) {
             NotificationSystem.show('success', `🎉 ¡Excelente! Todos los ${total} paquetes han sido procesados correctamente.`);
             this.triggerCompletionEffects();
-        }
-    }
-
-    static updateDetectionRate() {
-        const now = Date.now();
-        const oneMinute = 60000;
-        
-        // Calcular detecciones por minuto
-        if (detectionStats.lastDetectionTime > 0) {
-            const timeDiff = now - detectionStats.lastDetectionTime;
-            if (timeDiff < oneMinute) {
-                const rate = Math.round((detectionStats.detections / timeDiff) * oneMinute);
-                elements.detectionRate.textContent = rate;
-            }
         }
     }
 
@@ -1439,10 +1145,15 @@ class FileSystem {
     }
 }
 
-// Sistema de cámara y escáner mejorado
+// Sistema de cámara y escáner
 class ScannerSystem {
     static init() {
         elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
+        
+        // Configurar controles simples
+        elements.enhanceBtn.addEventListener('click', this.enhanceCamera.bind(this));
+        elements.torchBtn.addEventListener('click', this.toggleTorch.bind(this));
+        elements.resetBtn.addEventListener('click', this.resetCamera.bind(this));
     }
 
     static handleStartScanner() {
@@ -1473,35 +1184,25 @@ class ScannerSystem {
         elements.startButton.innerHTML = '<i class="fas fa-camera"></i><span>Activar Escáner</span>';
         elements.startButton.className = "btn btn-danger";
         elements.cameraPlaceholder.style.display = "block";
-        elements.cameraControls.style.display = "none";
-        elements.detectionInfo.style.display = "none";
+        elements.lightControls.classList.remove('show');
         
-        // Desactivar torch si está activado
-        if (CameraEnhancementSystem.torchEnabled) {
-            CameraEnhancementSystem.disableTorch();
-        }
+        // Reset visual
+        elements.cameraContainer.classList.remove('enhanced');
+        enhanced = false;
+        torchEnabled = false;
     }
 
     static startQuagga() {
-        // Configuración mejorada para mejor detección en poca luz
+        // Configuración estándar que funciona bien
         Quagga.init({
             inputStream: {
                 name: "Live",
                 type: "LiveStream",
                 target: elements.cameraContainer,
                 constraints: {
-                    width: { min: 640, ideal: 1920, max: 1920 },
-                    height: { min: 480, ideal: 1080, max: 1080 },
-                    facingMode: "environment",
-                    // NUEVAS CONFIGURACIONES PARA POCA LUZ
-                    advanced: [
-                        { exposureMode: "manual" },
-                        { whiteBalanceMode: "manual" },
-                        { focusMode: "continuous" },
-                        { brightness: { ideal: 0.7 } },
-                        { contrast: { ideal: 1.4 } },
-                        { saturation: { ideal: 1.2 } }
-                    ]
+                    width: { min: 640, ideal: 1280 },
+                    height: { min: 480, ideal: 720 },
+                    facingMode: "environment"
                 }
             },
             decoder: {
@@ -1513,26 +1214,16 @@ class ScannerSystem {
                     "code_39_vin_reader",
                     "codabar_reader",
                     "upc_reader",
-                    "upc_e_reader",
-                    // NUEVOS LECTORES PARA MEJOR DETECCIÓN
-                    "i2of5_reader",
-                    "2of5_reader"
+                    "upc_e_reader"
                 ]
             },
             locator: {
-                patchSize: "large", // Aumentado para mejor detección
-                halfSample: false   // Desactivado para mejor calidad
+                patchSize: "medium",
+                halfSample: true
             },
-            numOfWorkers: navigator.hardwareConcurrency ? Math.min(navigator.hardwareConcurrency, 8) : 4,
+            numOfWorkers: navigator.hardwareConcurrency || 4,
             locate: true,
-            frequency: 15, // Aumentado para más intentos por segundo
-            // NUEVAS CONFIGURACIONES
-            debug: {
-                drawBoundingBox: true,
-                showFrequency: true,
-                drawScanline: true,
-                showPattern: true
-            }
+            frequency: 10
         }, (err) => {
             if (err) {
                 console.error("Error al iniciar Quagga:", err);
@@ -1547,8 +1238,7 @@ class ScannerSystem {
 
     static setupCamera() {
         elements.cameraPlaceholder.style.display = "none";
-        elements.cameraControls.style.display = "flex";
-        elements.detectionInfo.style.display = "block";
+        elements.lightControls.classList.add('show');
 
         const video = elements.cameraContainer.querySelector("video");
         const canvas = elements.cameraContainer.querySelector("canvas");
@@ -1559,13 +1249,10 @@ class ScannerSystem {
             video.style.height = "100%";
             video.style.objectFit = "cover";
             
-            // Obtener el track de video para controles avanzados
+            // Obtener el track de video
             if (video.srcObject) {
                 currentTrack = video.srcObject.getVideoTracks()[0];
-                CameraEnhancementSystem.checkTorchSupport();
-                
-                // Aplicar configuraciones iniciales de la cámara
-                this.applyCameraSettings();
+                this.checkTorchSupport();
             }
         }
         
@@ -1584,32 +1271,80 @@ class ScannerSystem {
         elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
         elements.startButton.className = "btn btn-success";
 
-        NotificationSystem.show('success', '✅ Escáner optimizado activado. Mejor detección en poca luz habilitada.');
-        
-        // Auto-activar mejoras si es necesario
-        setTimeout(() => {
-            CameraEnhancementSystem.autoEnhance();
-        }, 2000);
+        NotificationSystem.show('success', '✅ Escáner activado. Use los botones de mejora si hay poca luz.');
     }
 
-    static async applyCameraSettings() {
+    static enhanceCamera() {
+        if (!enhanced) {
+            elements.cameraContainer.classList.add('enhanced');
+            elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Brillo ON';
+            elements.enhanceBtn.classList.remove('btn-warning');
+            elements.enhanceBtn.classList.add('btn-success');
+            enhanced = true;
+            NotificationSystem.show('success', '✨ Modo poca luz activado - Mejor brillo y contraste', 2000);
+        } else {
+            elements.cameraContainer.classList.remove('enhanced');
+            elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Mejorar Brillo';
+            elements.enhanceBtn.classList.remove('btn-success');
+            elements.enhanceBtn.classList.add('btn-warning');
+            enhanced = false;
+        }
+    }
+
+    static async toggleTorch() {
         if (!currentTrack) return;
 
         try {
-            // Aplicar configuraciones optimizadas para poca luz
-            await currentTrack.applyConstraints({
-                advanced: [
-                    { exposureCompensation: { ideal: 1.0 } },
-                    { iso: { ideal: 800 } },
-                    { brightness: { ideal: 0.6 } },
-                    { contrast: { ideal: 1.5 } },
-                    { saturation: { ideal: 1.1 } },
-                    { sharpness: { ideal: 0.8 } }
-                ]
-            });
-            console.log('📸 Configuraciones de cámara aplicadas para poca luz');
+            if (!torchEnabled) {
+                await currentTrack.applyConstraints({
+                    advanced: [{ torch: true }]
+                });
+                torchEnabled = true;
+                elements.torchBtn.innerHTML = '<i class="fas fa-flashlight"></i> Flash ON';
+                elements.torchBtn.classList.remove('btn-warning');
+                elements.torchBtn.classList.add('btn-success');
+                console.log('🔦 Flash activado');
+            } else {
+                await currentTrack.applyConstraints({
+                    advanced: [{ torch: false }]
+                });
+                torchEnabled = false;
+                elements.torchBtn.innerHTML = '<i class="fas fa-flashlight"></i> Flash';
+                elements.torchBtn.classList.remove('btn-success');
+                elements.torchBtn.classList.add('btn-warning');
+                console.log('🔦 Flash desactivado');
+            }
         } catch (e) {
-            console.log('⚠️ Algunas configuraciones de cámara no son compatibles:', e.message);
+            console.log('⚠️ Flash no soportado en este dispositivo');
+        }
+    }
+
+    static resetCamera() {
+        elements.cameraContainer.classList.remove('enhanced');
+        elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Mejorar Brillo';
+        elements.enhanceBtn.classList.remove('btn-success');
+        elements.enhanceBtn.classList.add('btn-warning');
+        enhanced = false;
+        
+        if (torchEnabled) {
+            this.toggleTorch();
+        }
+    }
+
+    static checkTorchSupport() {
+        if (!currentTrack) return;
+        
+        try {
+            const capabilities = currentTrack.getCapabilities();
+            if (capabilities.torch) {
+                elements.torchBtn.style.display = 'block';
+                console.log('🔦 Flash soportado');
+            } else {
+                elements.torchBtn.style.display = 'none';
+                console.log('❌ Flash no soportado');
+            }
+        } catch (e) {
+            elements.torchBtn.style.display = 'none';
         }
     }
 
@@ -1627,10 +1362,6 @@ class ScannerSystem {
     static processBarcodeDetection(code) {
         const cleanCode = code.trim();
         console.log('Código detectado:', cleanCode);
-
-        // Actualizar estadísticas de detección
-        detectionStats.detections++;
-        detectionStats.lastDetectionTime = Date.now();
 
         // Buscar el paquete en la lista
         const fardoIndex = fardos.findIndex(f => f.paquete === cleanCode);
@@ -1676,9 +1407,9 @@ class ScannerSystem {
 // Variables para evitar detecciones múltiples
 let lastDetectedCode = null;
 let lastDetectedTime = 0;
-const DETECTION_COOLDOWN = 1500; // Reducido para mejor respuesta
+const DETECTION_COOLDOWN = 2000; // 2 segundos entre detecciones del mismo código
 
-// Evento de detección de código de barras MEJORADO
+// Evento de detección de código de barras
 Quagga.onDetected(function(result) {
     const code = result.codeResult.code;
     const currentTime = Date.now();
@@ -1688,23 +1419,14 @@ Quagga.onDetected(function(result) {
         return;
     }
 
-    // NUEVA VALIDACIÓN DE CALIDAD
-    const confidence = result.codeResult.confidence || 0;
-    if (confidence < 60) { // Filtrar detecciones de baja confianza
-        console.log(`🔍 Código descartado por baja confianza: ${code} (${confidence})`);
-        return;
-    }
-
     lastDetectedCode = code;
     lastDetectedTime = currentTime;
-
-    console.log(`🎯 Código válido detectado: ${code} (Confianza: ${confidence})`);
 
     // Procesar el código detectado
     ScannerSystem.processBarcodeDetection(code);
 });
 
-// Dibujar overlay en la cámara MEJORADO
+// Dibujar overlay en la cámara (versión simplificada que funciona)
 Quagga.onProcessed(function (result) {
     const drawingCtx = Quagga.canvas.ctx.overlay;
     const drawingCanvas = Quagga.canvas.dom.overlay;
@@ -1713,51 +1435,24 @@ Quagga.onProcessed(function (result) {
 
     drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
-    // ANÁLISIS DE ILUMINACIÓN
-    const imageData = drawingCtx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
-    const brightness = this.analyzeBrightness(imageData);
-    const lightLevel = brightness > 120 ? 'Alta' : brightness > 80 ? 'Media' : 'Baja';
-    const quality = result ? (result.codeResult ? 'Buena' : 'Regular') : 'Buscando...';
-    
-    // Actualizar estadísticas
-    CameraEnhancementSystem.updateDetectionStats(lightLevel, quality);
-
-    // Dibujar cuadro de escaneo adaptativo según la luz
-    const rectWidth = drawingCanvas.width * 0.75;
-    const rectHeight = drawingCanvas.height * 0.35;
+    // Dibujar cuadro de escaneo fijo en el centro
+    const rectWidth = drawingCanvas.width * 0.7;
+    const rectHeight = drawingCanvas.height * 0.3;
     const rectX = (drawingCanvas.width - rectWidth) / 2;
     const rectY = (drawingCanvas.height - rectHeight) / 2;
 
-    // Color del cuadro según la iluminación
-    let strokeColor = '#10b981'; // Verde por defecto
-    let fillColor = 'rgba(16, 185, 129, 0.1)';
-    
-    if (lightLevel === 'Baja') {
-        strokeColor = '#f59e0b'; // Amarillo para poca luz
-        fillColor = 'rgba(245, 158, 11, 0.15)';
-    } else if (lightLevel === 'Media') {
-        strokeColor = '#3b82f6'; // Azul para luz media
-        fillColor = 'rgba(59, 130, 246, 0.1)';
-    }
-
     // Cuadro principal
     drawingCtx.lineWidth = 3;
-    drawingCtx.strokeStyle = strokeColor;
-    drawingCtx.fillStyle = fillColor;
+    drawingCtx.strokeStyle = enhanced ? '#f59e0b' : '#10b981';
+    drawingCtx.fillStyle = enhanced ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)';
     drawingCtx.fillRect(rectX, rectY, rectWidth, rectHeight);
     drawingCtx.strokeRect(rectX, rectY, rectWidth, rectHeight);
 
-    // Esquinas del cuadro de escaneo mejoradas
-    const cornerLength = 25;
-    const cornerThickness = 5;
+    // Esquinas del cuadro de escaneo
+    const cornerLength = 20;
+    const cornerThickness = 4;
     drawingCtx.lineWidth = cornerThickness;
     drawingCtx.strokeStyle = '#ffffff';
-
-    // Esquinas con sombra
-    drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    drawingCtx.shadowBlur = 2;
-    drawingCtx.shadowOffsetX = 1;
-    drawingCtx.shadowOffsetY = 1;
 
     // Esquina superior izquierda
     drawingCtx.beginPath();
@@ -1787,52 +1482,20 @@ Quagga.onProcessed(function (result) {
     drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight - cornerLength);
     drawingCtx.stroke();
 
-    // Resetear sombra
-    drawingCtx.shadowColor = 'transparent';
-    drawingCtx.shadowBlur = 0;
-    drawingCtx.shadowOffsetX = 0;
-    drawingCtx.shadowOffsetY = 0;
-
-    // Texto de instrucción adaptativo
+    // Texto de instrucción
     drawingCtx.fillStyle = '#ffffff';
-    drawingCtx.font = 'bold 16px Arial';
+    drawingCtx.font = '16px Arial';
     drawingCtx.textAlign = 'center';
-    drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    drawingCtx.shadowBlur = 3;
-    
-    let instructionText = 'Coloque el código de barras dentro del marco';
-    if (lightLevel === 'Baja') {
-        instructionText = '💡 Poca luz detectada - Use el flash o mueva a mejor iluminación';
-    }
-    
-    drawingCtx.fillText(instructionText, drawingCanvas.width / 2, rectY - 15);
+    drawingCtx.fillText('Coloque el código de barras dentro del marco', 
+                       drawingCanvas.width / 2, rectY - 10);
 
-    // Indicador de estado en tiempo real
-    drawingCtx.font = '14px Arial';
-    drawingCtx.fillStyle = strokeColor;
-    drawingCtx.fillText(`Luz: ${lightLevel} | Calidad: ${quality}`, 
-                       drawingCanvas.width / 2, rectY + rectHeight + 25);
-
-    // Línea de escaneo animada
-    const scanLineY = rectY + (rectHeight / 2) + Math.sin(Date.now() / 200) * 10;
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(rectX, scanLineY);
-    drawingCtx.lineTo(rectX + rectWidth, scanLineY);
-    drawingCtx.lineWidth = 2;
-    drawingCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    drawingCtx.stroke();
-
-    // Resetear sombra
-    drawingCtx.shadowColor = 'transparent';
-    drawingCtx.shadowBlur = 0;
-
-    // Dibujar códigos detectados con mejor visualización
+    // Dibujar códigos detectados
     if (result) {
         if (result.boxes) {
             result.boxes
                 .filter((box) => box !== result.box)
                 .forEach((box) => {
-                    drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+                    drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
                     drawingCtx.lineWidth = 2;
                     drawingCtx.beginPath();
                     box.forEach((point, index) => {
@@ -1848,10 +1511,8 @@ Quagga.onProcessed(function (result) {
         }
 
         if (result.box) {
-            // Código detectado con animación
-            const pulseIntensity = Math.sin(Date.now() / 100) * 0.3 + 0.7;
-            drawingCtx.strokeStyle = `rgba(0, 255, 0, ${pulseIntensity})`;
-            drawingCtx.lineWidth = 4;
+            drawingCtx.strokeStyle = "#00ff00";
+            drawingCtx.lineWidth = 3;
             drawingCtx.beginPath();
             result.box.forEach((point, index) => {
                 if (index === 0) {
@@ -1862,49 +1523,20 @@ Quagga.onProcessed(function (result) {
             });
             drawingCtx.closePath();
             drawingCtx.stroke();
-
-            // Sombra del código detectado
-            drawingCtx.strokeStyle = "rgba(0, 255, 0, 0.3)";
-            drawingCtx.lineWidth = 8;
-            drawingCtx.stroke();
         }
 
         if (result.codeResult && result.codeResult.code) {
-            // Mostrar código detectado con mejor estilo
-            const confidence = result.codeResult.confidence || 0;
-            drawingCtx.fillStyle = confidence > 80 ? "#00ff00" : "#ffff00";
-            drawingCtx.font = "bold 18px Arial";
+            drawingCtx.fillStyle = "#00ff00";
+            drawingCtx.font = "bold 16px Arial";
             drawingCtx.textAlign = "left";
-            drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-            drawingCtx.shadowBlur = 3;
-            drawingCtx.fillText(`${result.codeResult.code} (${Math.round(confidence)}%)`, 15, 35);
-            drawingCtx.shadowColor = 'transparent';
-            drawingCtx.shadowBlur = 0;
+            drawingCtx.fillText(result.codeResult.code, 10, 30);
         }
     }
 });
 
-// Función para analizar brillo de la imagen
-function analyzeBrightness(imageData) {
-    const data = imageData.data;
-    let totalBrightness = 0;
-    const pixelCount = data.length / 4;
-    
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        // Calcular luminancia usando la fórmula estándar
-        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-        totalBrightness += brightness;
-    }
-    
-    return totalBrightness / pixelCount;
-}
-
-// Inicialización del sistema MEJORADA
+// Inicialización del sistema
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando KALAF SOFT System v2.2.0 - Optimizado para poca luz...');
+    console.log('Inicializando KALAF SOFT System v2.1.1...');
         
     // Verificar disponibilidad de APIs necesarias
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1914,13 +1546,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar módulos
     SoundSystem.init();
-    CameraEnhancementSystem.init(); // NUEVO
     FileSystem.init();
     ScannerSystem.init();
     MetricsSystem.update();
 
-    console.log('✅ Sistema inicializado correctamente con mejoras para poca luz');
-    NotificationSystem.show('success', '✅ Sistema KALAF SOFT v2.2.0 listo. Optimizado para detección en poca luz.', 4000);
+    console.log('Sistema inicializado correctamente');
+    NotificationSystem.show('success', '✅ Sistema KALAF SOFT listo. Carga un archivo Excel para comenzar.', 3000);
 });
 
 // Manejo de errores globales
@@ -1929,47 +1560,18 @@ window.addEventListener('error', function(e) {
     NotificationSystem.show('error', '❌ Se produjo un error en el sistema. Recarga la página si persiste.');
 });
 
-// Manejo de permisos de cámara mejorado
+// Manejo de permisos de cámara
 navigator.permissions?.query({name: 'camera'}).then(function(result) {
     console.log('Estado de permisos de cámara:', result.state);
     if (result.state === 'denied') {
         NotificationSystem.show('warning', '⚠️ Los permisos de cámara están denegados. Habilítalos en la configuración del navegador.');
     }
-    
-    result.onchange = function() {
-        if (result.state === 'granted') {
-            NotificationSystem.show('success', '✅ Permisos de cámara concedidos. Ya puedes usar el escáner.');
-        }
-    };
 });
 
-// Detección de cambios en la conectividad
-window.addEventListener('online', function() {
-    console.log('🌐 Conexión restaurada');
-    elements.connectionStatus.className = 'connection-status';
-});
-
-window.addEventListener('offline', function() {
-    console.log('🚫 Sin conexión a internet');
-    elements.connectionStatus.className = 'connection-status offline';
-});
-
-// Optimizaciones de rendimiento mejoradas
+// Optimizaciones de rendimiento
 if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
-        // Pre-cargar recursos cuando el sistema esté inactivo
-        console.log('🔧 Aplicando optimizaciones de rendimiento...');
-        
-        // Optimizar detección de códigos
-        if (typeof Quagga !== 'undefined') {
-            Quagga.ImageWrapper.prototype.invert = function() {
-                // Invertir imagen para mejor detección en poca luz
-                const data = this.data;
-                for (let i = 0; i < data.length; i++) {
-                    data[i] = 255 - data[i];
-                }
-            };
-        }
+        console.log('Optimizaciones de rendimiento aplicadas');
     });
 }
 
@@ -1988,59 +1590,6 @@ document.addEventListener('touchend', function(event) {
     }
     lastTouchEnd = now;
 }, false);
-
-// Atajos de teclado para desarrolladores
-document.addEventListener('keydown', function(e) {
-    // Ctrl + Shift + D = Activar/Desactivar debug
-    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        console.log('🔧 Modo debug activado');
-        SoundSystem.testAudio();
-        e.preventDefault();
-    }
-    
-    // Ctrl + Shift + L = Toggle modo poca luz
-    if (e.ctrlKey && e.shiftKey && e.key === 'L') {
-        console.log('💡 Toggle modo poca luz');
-        if (isQuaggaStarted) {
-            CameraEnhancementSystem.autoEnhance();
-        }
-        e.preventDefault();
-    }
-    
-    // Ctrl + Shift + F = Toggle flash
-    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-        console.log('🔦 Toggle flash');
-        if (isQuaggaStarted && CameraEnhancementSystem.torchSupported) {
-            CameraEnhancementSystem.toggleTorch();
-        }
-        e.preventDefault();
-    }
-});
-
-// Función de diagnóstico completo
-window.diagnosticSystem = function() {
-    console.log('🔍 === DIAGNÓSTICO COMPLETO DEL SISTEMA ===');
-    console.log('Estado general:');
-    console.log('- Sistema listo:', systemReady);
-    console.log('- Escáner activo:', isQuaggaStarted);
-    console.log('- Paquetes cargados:', fardos.length);
-    console.log('- Audio cargado:', SoundSystem.audioLoaded);
-    console.log('- Usuario interactuó:', SoundSystem.userInteracted);
-    console.log('- Flash soportado:', CameraEnhancementSystem.torchSupported);
-    console.log('- Auto mejora activa:', CameraEnhancementSystem.autoEnhanceEnabled);
-    console.log('Estadísticas de detección:');
-    console.log('- Detecciones totales:', detectionStats.detections);
-    console.log('- Nivel de luz:', detectionStats.lightLevel);
-    console.log('- Calidad:', detectionStats.qualityScore);
-    console.log('Configuración de cámara:');
-    console.log('- Brillo:', CameraEnhancementSystem.brightness);
-    console.log('- Contraste:', CameraEnhancementSystem.contrast);
-    console.log('- Flash activo:', CameraEnhancementSystem.torchEnabled);
-    console.log('==========================================');
-};
-
-console.log('💡 Tip: Ejecuta diagnosticSystem() en la consola para un diagnóstico completo');
-console.log('🎯 Sistema optimizado para detección en poca luz - v2.2.0');
 </script>
 </body>
 </html>
