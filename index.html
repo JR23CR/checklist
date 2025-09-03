@@ -244,6 +244,102 @@ color: white;
 background: var(--secondary-light);
 }
 
+.btn-warning {
+background: var(--warning-color);
+color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+background: var(--warning-light);
+}
+
+/* NUEVOS CONTROLES DE CÁMARA */
+.camera-controls {
+display: flex;
+gap: 1rem;
+margin-bottom: 1rem;
+flex-wrap: wrap;
+align-items: center;
+}
+
+.brightness-control, .contrast-control {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.brightness-control label, .contrast-control label {
+font-size: 0.9rem;
+font-weight: 500;
+min-width: 80px;
+}
+
+.brightness-slider, .contrast-slider {
+width: 150px;
+height: 6px;
+border-radius: 3px;
+background: #e5e7eb;
+outline: none;
+-webkit-appearance: none;
+}
+
+.brightness-slider::-webkit-slider-thumb, .contrast-slider::-webkit-slider-thumb {
+appearance: none;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: var(--primary-color);
+cursor: pointer;
+box-shadow: var(--shadow);
+}
+
+.brightness-slider::-moz-range-thumb, .contrast-slider::-moz-range-thumb {
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: var(--primary-color);
+cursor: pointer;
+border: none;
+box-shadow: var(--shadow);
+}
+
+.torch-toggle {
+padding: 0.5rem 1rem;
+font-size: 0.9rem;
+}
+
+.detection-info {
+background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+border: 1px solid #bfdbfe;
+border-radius: var(--border-radius);
+padding: 1rem;
+margin-bottom: 1rem;
+display: none;
+}
+
+.detection-stats {
+display: flex;
+gap: 1rem;
+font-size: 0.9rem;
+}
+
+.stat-item {
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+
+.stat-value {
+font-weight: 700;
+font-size: 1.2rem;
+color: var(--primary-color);
+}
+
+.stat-label {
+color: #6b7280;
+font-size: 0.8rem;
+}
+
 .metrics-grid {
 display: grid;
 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -369,6 +465,20 @@ width: 100% !important;
 height: 100% !important;
 }
 
+/* FILTROS DE IMAGEN MEJORADOS */
+.camera-container video {
+filter: brightness(var(--camera-brightness, 1)) contrast(var(--camera-contrast, 1));
+transition: filter 0.3s ease;
+}
+
+.camera-container.low-light video {
+filter: brightness(1.4) contrast(1.6) saturate(0.8);
+}
+
+.camera-container.enhanced video {
+filter: brightness(1.2) contrast(1.4) saturate(1.1) hue-rotate(5deg);
+}
+
 .fardos-grid {
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -480,6 +590,14 @@ grid-template-columns: 1fr;
 .fardos-grid {
 grid-template-columns: 1fr;
 }
+
+.camera-controls {
+justify-content: center;
+}
+
+.brightness-slider, .contrast-slider {
+width: 120px;
+}
 }
 </style>
 </head>
@@ -487,13 +605,13 @@ grid-template-columns: 1fr;
 <div class="app-container">
 <!-- Header profesional -->
 <header class="app-header">
-<div class="version">v2.1.0</div>
+<div class="version">v2.2.0</div>
 <div class="connection-status" id="connection-status"></div>
 <div class="logo-section">
 <div class="logo">📋</div>
 <div class="company-info">
 <h1>KALAF SOFT</h1>
-<p>Sistema Check List de Paquetes de Piso</p>
+<p>Sistema Check List de Paquetes de Piso - Mejorado</p>
 </div>
 </div>
 </header>
@@ -563,13 +681,56 @@ Panel de Control
 <div class="card">
 <div class="card-header">
 <i class="fas fa-qrcode"></i>
-Escáner de Códigos de Barras
+Escáner de Códigos de Barras - Optimizado para Poca Luz
 </div>
-<div class="card-body" style="padding: 0;">
+<div class="card-body">
+<!-- NUEVOS CONTROLES DE CÁMARA -->
+<div class="camera-controls" id="camera-controls" style="display: none;">
+<div class="brightness-control">
+<label>Brillo:</label>
+<input type="range" id="brightness-slider" class="brightness-slider" min="0.5" max="2" step="0.1" value="1">
+<span id="brightness-value">100%</span>
+</div>
+<div class="contrast-control">
+<label>Contraste:</label>
+<input type="range" id="contrast-slider" class="contrast-slider" min="0.5" max="3" step="0.1" value="1">
+<span id="contrast-value">100%</span>
+</div>
+<button id="torch-toggle" class="btn btn-warning torch-toggle" style="display: none;">
+<i class="fas fa-lightbulb"></i>
+<span>Flash</span>
+</button>
+<button id="auto-enhance" class="btn btn-success">
+<i class="fas fa-magic"></i>
+<span>Auto Mejorar</span>
+</button>
+</div>
+
+<!-- Información de detección -->
+<div class="detection-info" id="detection-info">
+<div class="detection-stats">
+<div class="stat-item">
+<div class="stat-value" id="detection-rate">0</div>
+<div class="stat-label">Detecciones/min</div>
+</div>
+<div class="stat-item">
+<div class="stat-value" id="light-level">?</div>
+<div class="stat-label">Nivel de Luz</div>
+</div>
+<div class="stat-item">
+<div class="stat-value" id="quality-score">?</div>
+<div class="stat-label">Calidad</div>
+</div>
+</div>
+</div>
+
 <div class="camera-container" id="camera-container">
 <div class="camera-placeholder" id="camera-placeholder">
 <i class="fas fa-camera"></i>
 <div>Presiona "Activar Escáner" para comenzar</div>
+<div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">
+Optimizado para detección en poca luz
+</div>
 </div>
 <div class="camera-overlay"></div>
 </div>
@@ -598,7 +759,7 @@ Carga un archivo Excel para mostrar los paquetes
 <footer class="app-footer">
 <div class="status">
 <i class="fas fa-shield-check"></i>
-Sistema Activo
+Sistema Activo - Modo Poca Luz
 </div>
 <div>© 2024 KALAF SOFT</div>
 </footer>
@@ -612,6 +773,13 @@ Sistema Activo
 let fardos = [];
 let isQuaggaStarted = false;
 let systemReady = false;
+let currentTrack = null;
+let detectionStats = {
+    detections: 0,
+    lastDetectionTime: 0,
+    lightLevel: 'unknown',
+    qualityScore: 'unknown'
+};
 
 // Referencias a elementos DOM
 const elements = {
@@ -635,7 +803,20 @@ progressPercentage: document.getElementById("progress-percentage"),
 // Alertas
 alertError: document.getElementById("alert-error"),
 alertSuccess: document.getElementById("alert-success"),
-alertWarning: document.getElementById("alert-warning")
+alertWarning: document.getElementById("alert-warning"),
+
+// NUEVOS CONTROLES
+cameraControls: document.getElementById("camera-controls"),
+brightnessSlider: document.getElementById("brightness-slider"),
+contrastSlider: document.getElementById("contrast-slider"),
+brightnessValue: document.getElementById("brightness-value"),
+contrastValue: document.getElementById("contrast-value"),
+torchToggle: document.getElementById("torch-toggle"),
+autoEnhance: document.getElementById("auto-enhance"),
+detectionInfo: document.getElementById("detection-info"),
+detectionRate: document.getElementById("detection-rate"),
+lightLevel: document.getElementById("light-level"),
+qualityScore: document.getElementById("quality-score")
 };
 
 // Sistema de sonido mejorado - SOLO MP3, SIN FALLBACK
@@ -892,520 +1073,974 @@ class SoundSystem {
     }
 }
 
+// NUEVO: Sistema de mejora de cámara para poca luz
+class CameraEnhancementSystem {
+    static init() {
+        this.setupControls();
+        this.brightness = 1;
+        this.contrast = 1;
+        this.torchSupported = false;
+        this.torchEnabled = false;
+        this.autoEnhanceEnabled = false;
+        
+        console.log('📸 Sistema de mejora de cámara inicializado');
+    }
+    
+    static setupControls() {
+        // Control de brillo
+        elements.brightnessSlider.addEventListener('input', (e) => {
+            this.brightness = parseFloat(e.target.value);
+            this.updateCameraFilters();
+            elements.brightnessValue.textContent = Math.round(this.brightness * 100) + '%';
+        });
+        
+        // Control de contraste
+        elements.contrastSlider.addEventListener('input', (e) => {
+            this.contrast = parseFloat(e.target.value);
+            this.updateCameraFilters();
+            elements.contrastValue.textContent = Math.round(this.contrast * 100) + '%';
+        });
+        
+        // Toggle de flash/torch
+        elements.torchToggle.addEventListener('click', () => {
+            this.toggleTorch();
+        });
+        
+        // Auto mejora
+        elements.autoEnhance.addEventListener('click', () => {
+            this.autoEnhance();
+        });
+    }
+    
+    static updateCameraFilters() {
+        const container = elements.cameraContainer;
+        container.style.setProperty('--camera-brightness', this.brightness);
+        container.style.setProperty('--camera-contrast', this.contrast);
+        
+        console.log(`📸 Filtros actualizados - Brillo: ${this.brightness}, Contraste: ${this.contrast}`);
+    }
+    
+    static async enableTorch() {
+        if (!currentTrack) return false;
+        
+        try {
+            const capabilities = currentTrack.getCapabilities();
+            if (capabilities.torch) {
+                await currentTrack.applyConstraints({
+                    advanced: [{ torch: true }]
+                });
+                this.torchEnabled = true;
+                elements.torchToggle.innerHTML = '<i class="fas fa-lightbulb"></i><span>Flash ON</span>';
+                elements.torchToggle.classList.remove('btn-warning');
+                elements.torchToggle.classList.add('btn-success');
+                console.log('🔦 Flash activado');
+                return true;
+            }
+        } catch (e) {
+            console.error('❌ Error activando flash:', e);
+        }
+        return false;
+    }
+    
+    static async disableTorch() {
+        if (!currentTrack) return;
+        
+        try {
+            await currentTrack.applyConstraints({
+                advanced: [{ torch: false }]
+            });
+            this.torchEnabled = false;
+            elements.torchToggle.innerHTML = '<i class="fas fa-lightbulb"></i><span>Flash</span>';
+            elements.torchToggle.classList.remove('btn-success');
+            elements.torchToggle.classList.add('btn-warning');
+            console.log('🔦 Flash desactivado');
+        } catch (e) {
+            console.error('❌ Error desactivando flash:', e);
+        }
+    }
+    
+    static async toggleTorch() {
+        if (this.torchEnabled) {
+            await this.disableTorch();
+        } else {
+            await this.enableTorch();
+        }
+    }
+    
+    static autoEnhance() {
+        this.autoEnhanceEnabled = !this.autoEnhanceEnabled;
+        
+        if (this.autoEnhanceEnabled) {
+            // Configuración optimizada para poca luz
+            this.brightness = 1.3;
+            this.contrast = 1.5;
+            
+            elements.brightnessSlider.value = this.brightness;
+            elements.contrastSlider.value = this.contrast;
+            elements.brightnessValue.textContent = Math.round(this.brightness * 100) + '%';
+            elements.contrastValue.textContent = Math.round(this.contrast * 100) + '%';
+            
+            // Aplicar clase especial
+            elements.cameraContainer.classList.add('low-light');
+            
+            elements.autoEnhance.innerHTML = '<i class="fas fa-magic"></i><span>Auto ON</span>';
+            elements.autoEnhance.classList.remove('btn-success');
+            elements.autoEnhance.classList.add('btn-warning');
+            
+            NotificationSystem.show('success', '✨ Modo poca luz activado - Mejor detección en ambientes oscuros', 3000);
+        } else {
+            // Restaurar valores normales
+            this.brightness = 1;
+            this.contrast = 1;
+            
+            elements.brightnessSlider.value = this.brightness;
+            elements.contrastSlider.value = this.contrast;
+            elements.brightnessValue.textContent = '100%';
+            elements.contrastValue.textContent = '100%';
+            
+            elements.cameraContainer.classList.remove('low-light');
+            
+            elements.autoEnhance.innerHTML = '<i class="fas fa-magic"></i><span>Auto Mejorar</span>';
+            elements.autoEnhance.classList.remove('btn-warning');
+            elements.autoEnhance.classList.add('btn-success');
+        }
+        
+        this.updateCameraFilters();
+    }
+    
+    static checkTorchSupport() {
+        if (!currentTrack) return false;
+        
+        try {
+            const capabilities = currentTrack.getCapabilities();
+            this.torchSupported = !!capabilities.torch;
+            
+            if (this.torchSupported) {
+                elements.torchToggle.style.display = 'block';
+                console.log('🔦 Flash soportado por el dispositivo');
+            } else {
+                elements.torchToggle.style.display = 'none';
+                console.log('❌ Flash no soportado por el dispositivo');
+            }
+            
+            return this.torchSupported;
+        } catch (e) {
+            console.error('Error verificando soporte de flash:', e);
+            return false;
+        }
+    }
+    
+    static updateDetectionStats(lightLevel, qualityScore) {
+        detectionStats.lightLevel = lightLevel;
+        detectionStats.qualityScore = qualityScore;
+        
+        elements.lightLevel.textContent = lightLevel;
+        elements.qualityScore.textContent = qualityScore;
+        
+        // Auto-activar modo poca luz si la iluminación es baja
+        if (lightLevel === 'Baja' && !this.autoEnhanceEnabled) {
+            console.log('💡 Luz baja detectada - Activando mejoras automáticamente');
+            setTimeout(() => this.autoEnhance(), 1000);
+        }
+    }
+}
+
 // Sistema de notificaciones
 class NotificationSystem {
-static show(type, message, duration = 5000) {
-const alert = elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`];
-if (!alert) return;
+    static show(type, message, duration = 5000) {
+        const alert = elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`];
+        if (!alert) return;
 
-alert.textContent = message;
-alert.style.display = 'block';
+        alert.textContent = message;
+        alert.style.display = 'block';
 
-setTimeout(() => {
-alert.style.display = 'none';
-}, duration);
+        setTimeout(() => {
+            alert.style.display = 'none';
+        }, duration);
 
-// Ocultar otras alertas
-['error', 'success', 'warning'].forEach(t => {
-if (t !== type) {
-elements[`alert${t.charAt(0).toUpperCase() + t.slice(1)}`].style.display = 'none';
-}
-});
-}
+        // Ocultar otras alertas
+        ['error', 'success', 'warning'].forEach(t => {
+            if (t !== type) {
+                elements[`alert${t.charAt(0).toUpperCase() + t.slice(1)}`].style.display = 'none';
+            }
+        });
+    }
 
-static hide() {
-['error', 'success', 'warning'].forEach(type => {
-elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`].style.display = 'none';
-});
-}
+    static hide() {
+        ['error', 'success', 'warning'].forEach(type => {
+            elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`].style.display = 'none';
+        });
+    }
 }
 
 // Sistema de métricas
 class MetricsSystem {
-static update() {
-const total = fardos.length;
-const completed = fardos.filter(f => f.revisado).length;
-const pending = total - completed;
-const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    static update() {
+        const total = fardos.length;
+        const completed = fardos.filter(f => f.revisado).length;
+        const pending = total - completed;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-elements.totalCount.textContent = total;
-elements.completedCount.textContent = completed;
-elements.pendingCount.textContent = pending;
-elements.progressFill.style.width = `${percentage}%`;
-elements.progressPercentage.textContent = `${percentage}%`;
+        elements.totalCount.textContent = total;
+        elements.completedCount.textContent = completed;
+        elements.pendingCount.textContent = pending;
+        elements.progressFill.style.width = `${percentage}%`;
+        elements.progressPercentage.textContent = `${percentage}%`;
 
-// Actualizar estado de conexión
-elements.connectionStatus.className = systemReady ? 'connection-status' : 'connection-status offline';
+        // Actualizar estado de conexión
+        elements.connectionStatus.className = systemReady ? 'connection-status' : 'connection-status offline';
 
-// Verificar completado
-if (total > 0 && completed === total) {
-NotificationSystem.show('success', `🎉 ¡Excelente! Todos los ${total} paquetes han sido procesados correctamente.`);
-this.triggerCompletionEffects();
-}
-}
+        // Actualizar tasa de detección
+        this.updateDetectionRate();
 
-static triggerCompletionEffects() {
-// Vibración de éxito
-if ('vibrate' in navigator) {
-navigator.vibrate([200, 100, 200, 100, 200]);
-}
+        // Verificar completado
+        if (total > 0 && completed === total) {
+            NotificationSystem.show('success', `🎉 ¡Excelente! Todos los ${total} paquetes han sido procesados correctamente.`);
+            this.triggerCompletionEffects();
+        }
+    }
 
-// Sonido de éxito
-SoundSystem.playSuccessSound();
+    static updateDetectionRate() {
+        const now = Date.now();
+        const oneMinute = 60000;
+        
+        // Calcular detecciones por minuto
+        if (detectionStats.lastDetectionTime > 0) {
+            const timeDiff = now - detectionStats.lastDetectionTime;
+            if (timeDiff < oneMinute) {
+                const rate = Math.round((detectionStats.detections / timeDiff) * oneMinute);
+                elements.detectionRate.textContent = rate;
+            }
+        }
+    }
 
-// Efecto visual en la barra de progreso
-elements.progressFill.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)';
-elements.progressFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
-}
+    static triggerCompletionEffects() {
+        // Vibración de éxito
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+
+        // Sonido de éxito
+        SoundSystem.playSuccessSound();
+
+        // Efecto visual en la barra de progreso
+        elements.progressFill.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)';
+        elements.progressFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
+    }
 }
 
 // Sistema de archivos
 class FileSystem {
-static init() {
-elements.fileInput.addEventListener('change', this.handleFileChange.bind(this));
+    static init() {
+        elements.fileInput.addEventListener('change', this.handleFileChange.bind(this));
+    }
+
+    static handleFileChange(event) {
+        const file = event.target.files[0];
+        const label = elements.fileLabel;
+
+        if (!file) {
+            this.resetFileInput();
+            return;
+        }
+
+        // Actualizar UI del input
+        label.classList.add('has-file');
+        label.innerHTML = `<i class="fas fa-file-excel"></i><span>${file.name}</span>`;
+
+        // Mostrar loading
+        elements.loadingSpinner.style.display = 'block';
+        NotificationSystem.show('warning', 'Procesando archivo Excel...');
+
+        // Procesar archivo
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets["Packing List"];
+
+                if (!sheet) {
+                    throw new Error('La hoja "Packing List" no fue encontrada en el archivo');
+                }
+
+                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                this.procesarDatos(rawData);
+
+            } catch (error) {
+                console.error('Error al procesar archivo:', error);
+                NotificationSystem.show('error', `❌ Error: ${error.message}`);
+                this.resetFileInput();
+            } finally {
+                elements.loadingSpinner.style.display = 'none';
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    static resetFileInput() {
+        const label = elements.fileLabel;
+        label.classList.remove('has-file');
+        label.innerHTML = '<i class="fas fa-upload"></i><span>Seleccionar Archivo Excel</span>';
+        elements.fileInput.value = '';
+        elements.startButton.disabled = true;
+        systemReady = false;
+        MetricsSystem.update();
+    }
+
+    static procesarDatos(rawData) {
+        const fardosUnicos = new Set();
+
+        // Extraer paquetes únicos del archivo Excel
+        for (let i = 12; i < rawData.length; i++) {
+            const fila = rawData[i];
+            if (fila && fila[1]) {
+                fardosUnicos.add(fila[1].toString().trim());
+            }
+        }
+
+        // Convertir a array de objetos
+        fardos = Array.from(fardosUnicos).map((paquete) => ({
+            paquete: paquete,
+            revisado: false,
+            timestamp: null
+        }));
+
+        if (fardos.length > 0) {
+            NotificationSystem.show('success', `✅ Se cargaron ${fardos.length} paquetes correctamente.`);
+            elements.startButton.disabled = false;
+            systemReady = true;
+            this.renderFardosList();
+        } else {
+            NotificationSystem.show('error', '❌ No se encontraron paquetes válidos en el archivo.');
+            systemReady = false;
+        }
+
+        MetricsSystem.update();
+    }
+
+    static renderFardosList() {
+        const grid = elements.fardosGrid;
+        grid.innerHTML = '';
+
+        fardos.forEach((fardo, index) => {
+            const item = document.createElement('div');
+            item.className = 'fardo-item';
+            item.textContent = fardo.paquete;
+            item.id = `fardo-${index}`;
+
+            if (fardo.revisado) {
+                item.classList.add('completed');
+            }
+
+            grid.appendChild(item);
+        });
+    }
 }
 
-static handleFileChange(event) {
-const file = event.target.files[0];
-const label = elements.fileLabel;
-
-if (!file) {
-this.resetFileInput();
-return;
-}
-
-// Actualizar UI del input
-label.classList.add('has-file');
-label.innerHTML = `<i class="fas fa-file-excel"></i><span>${file.name}</span>`;
-
-// Mostrar loading
-elements.loadingSpinner.style.display = 'block';
-NotificationSystem.show('warning', 'Procesando archivo Excel...');
-
-// Procesar archivo
-const reader = new FileReader();
-reader.onload = (e) => {
-try {
-const data = new Uint8Array(e.target.result);
-const workbook = XLSX.read(data, { type: 'array' });
-const sheet = workbook.Sheets["Packing List"];
-
-if (!sheet) {
-throw new Error('La hoja "Packing List" no fue encontrada en el archivo');
-}
-
-const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-this.procesarDatos(rawData);
-
-} catch (error) {
-console.error('Error al procesar archivo:', error);
-NotificationSystem.show('error', `❌ Error: ${error.message}`);
-this.resetFileInput();
-} finally {
-elements.loadingSpinner.style.display = 'none';
-}
-};
-
-reader.readAsArrayBuffer(file);
-}
-
-static resetFileInput() {
-const label = elements.fileLabel;
-label.classList.remove('has-file');
-label.innerHTML = '<i class="fas fa-upload"></i><span>Seleccionar Archivo Excel</span>';
-elements.fileInput.value = '';
-elements.startButton.disabled = true;
-systemReady = false;
-MetricsSystem.update();
-}
-
-static procesarDatos(rawData) {
-const fardosUnicos = new Set();
-
-// Extraer paquetes únicos del archivo Excel
-for (let i = 12; i < rawData.length; i++) {
-const fila = rawData[i];
-if (fila && fila[1]) {
-fardosUnicos.add(fila[1].toString().trim());
-}
-}
-
-// Convertir a array de objetos
-fardos = Array.from(fardosUnicos).map((paquete) => ({
-paquete: paquete,
-revisado: false,
-timestamp: null
-}));
-
-if (fardos.length > 0) {
-NotificationSystem.show('success', `✅ Se cargaron ${fardos.length} paquetes correctamente.`);
-elements.startButton.disabled = false;
-systemReady = true;
-this.renderFardosList();
-} else {
-NotificationSystem.show('error', '❌ No se encontraron paquetes válidos en el archivo.');
-systemReady = false;
-}
-
-MetricsSystem.update();
-}
-
-static renderFardosList() {
-const grid = elements.fardosGrid;
-grid.innerHTML = '';
-
-fardos.forEach((fardo, index) => {
-const item = document.createElement('div');
-item.className = 'fardo-item';
-item.textContent = fardo.paquete;
-item.id = `fardo-${index}`;
-
-if (fardo.revisado) {
-item.classList.add('completed');
-}
-
-grid.appendChild(item);
-});
-}
-}
-
-// Sistema de cámara y escáner
+// Sistema de cámara y escáner mejorado
 class ScannerSystem {
-static init() {
-elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
-}
+    static init() {
+        elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
+    }
 
-static handleStartScanner() {
-if (!systemReady) {
-NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
-return;
-}
+    static handleStartScanner() {
+        if (!systemReady) {
+            NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
+            return;
+        }
 
-if (!isQuaggaStarted) {
-NotificationSystem.hide();
-this.startQuagga();
-} else {
-// Detener escáner si ya está iniciado
-Quagga.stop();
-isQuaggaStarted = false;
-elements.startButton.innerHTML = '<i class="fas fa-camera"></i><span>Activar Escáner</span>';
-elements.startButton.className = "btn btn-danger";
-elements.cameraPlaceholder.style.display = "block";
-}
-}
+        if (!isQuaggaStarted) {
+            NotificationSystem.hide();
+            this.startQuagga();
+        } else {
+            // Detener escáner si ya está iniciado
+            this.stopScanner();
+        }
+    }
 
-static startQuagga() {
-// Configuración mejorada para mejor detección
-Quagga.init({
-inputStream: {
-name: "Live",
-type: "LiveStream",
-target: elements.cameraContainer,
-constraints: {
-width: { min: 640, ideal: 1280 },
-height: { min: 480, ideal: 720 },
-facingMode: "environment"
-}
-},
-decoder: {
-readers: [
-"code_128_reader", 
-"ean_reader", 
-"ean_8_reader",
-"code_39_reader",
-"code_39_vin_reader",
-"codabar_reader",
-"upc_reader",
-"upc_e_reader"
-]
-},
-locator: {
-patchSize: "medium",
-halfSample: true
-},
-numOfWorkers: navigator.hardwareConcurrency || 4,
-locate: true,
-frequency: 10
-}, (err) => {
-if (err) {
-console.error("Error al iniciar Quagga:", err);
-NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
-elements.cameraPlaceholder.style.display = "block";
-return;
-}
+    static stopScanner() {
+        Quagga.stop();
+        isQuaggaStarted = false;
+        
+        // Limpiar track de cámara
+        if (currentTrack) {
+            currentTrack.stop();
+            currentTrack = null;
+        }
+        
+        elements.startButton.innerHTML = '<i class="fas fa-camera"></i><span>Activar Escáner</span>';
+        elements.startButton.className = "btn btn-danger";
+        elements.cameraPlaceholder.style.display = "block";
+        elements.cameraControls.style.display = "none";
+        elements.detectionInfo.style.display = "none";
+        
+        // Desactivar torch si está activado
+        if (CameraEnhancementSystem.torchEnabled) {
+            CameraEnhancementSystem.disableTorch();
+        }
+    }
 
-elements.cameraPlaceholder.style.display = "none";
+    static startQuagga() {
+        // Configuración mejorada para mejor detección en poca luz
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: elements.cameraContainer,
+                constraints: {
+                    width: { min: 640, ideal: 1920, max: 1920 },
+                    height: { min: 480, ideal: 1080, max: 1080 },
+                    facingMode: "environment",
+                    // NUEVAS CONFIGURACIONES PARA POCA LUZ
+                    advanced: [
+                        { exposureMode: "manual" },
+                        { whiteBalanceMode: "manual" },
+                        { focusMode: "continuous" },
+                        { brightness: { ideal: 0.7 } },
+                        { contrast: { ideal: 1.4 } },
+                        { saturation: { ideal: 1.2 } }
+                    ]
+                }
+            },
+            decoder: {
+                readers: [
+                    "code_128_reader", 
+                    "ean_reader", 
+                    "ean_8_reader",
+                    "code_39_reader",
+                    "code_39_vin_reader",
+                    "codabar_reader",
+                    "upc_reader",
+                    "upc_e_reader",
+                    // NUEVOS LECTORES PARA MEJOR DETECCIÓN
+                    "i2of5_reader",
+                    "2of5_reader"
+                ]
+            },
+            locator: {
+                patchSize: "large", // Aumentado para mejor detección
+                halfSample: false   // Desactivado para mejor calidad
+            },
+            numOfWorkers: navigator.hardwareConcurrency ? Math.min(navigator.hardwareConcurrency, 8) : 4,
+            locate: true,
+            frequency: 15, // Aumentado para más intentos por segundo
+            // NUEVAS CONFIGURACIONES
+            debug: {
+                drawBoundingBox: true,
+                showFrequency: true,
+                drawScanline: true,
+                showPattern: true
+            }
+        }, (err) => {
+            if (err) {
+                console.error("Error al iniciar Quagga:", err);
+                NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
+                elements.cameraPlaceholder.style.display = "block";
+                return;
+            }
 
-const video = elements.cameraContainer.querySelector("video");
-const canvas = elements.cameraContainer.querySelector("canvas");
+            this.setupCamera();
+        });
+    }
 
-if (video) {
-video.style.display = "block";
-video.style.width = "100%";
-video.style.height = "100%";
-video.style.objectFit = "cover";
-}
-if (canvas) {
-canvas.style.display = "block";
-canvas.style.position = "absolute";
-canvas.style.top = "0";
-canvas.style.left = "0";
-canvas.style.width = "100%";
-canvas.style.height = "100%";
-}
+    static setupCamera() {
+        elements.cameraPlaceholder.style.display = "none";
+        elements.cameraControls.style.display = "flex";
+        elements.detectionInfo.style.display = "block";
 
-Quagga.start();
-isQuaggaStarted = true;
+        const video = elements.cameraContainer.querySelector("video");
+        const canvas = elements.cameraContainer.querySelector("canvas");
 
-elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
-elements.startButton.className = "btn btn-success";
+        if (video) {
+            video.style.display = "block";
+            video.style.width = "100%";
+            video.style.height = "100%";
+            video.style.objectFit = "cover";
+            
+            // Obtener el track de video para controles avanzados
+            if (video.srcObject) {
+                currentTrack = video.srcObject.getVideoTracks()[0];
+                CameraEnhancementSystem.checkTorchSupport();
+                
+                // Aplicar configuraciones iniciales de la cámara
+                this.applyCameraSettings();
+            }
+        }
+        
+        if (canvas) {
+            canvas.style.display = "block";
+            canvas.style.position = "absolute";
+            canvas.style.top = "0";
+            canvas.style.left = "0";
+            canvas.style.width = "100%";
+            canvas.style.height = "100%";
+        }
 
-NotificationSystem.show('success', '✅ Escáner activado. Apunte la cámara hacia los códigos de barras.');
-});
-}
+        Quagga.start();
+        isQuaggaStarted = true;
 
-static showScanNotification(message, type = 'success') {
-const notification = elements.scanNotification;
-notification.textContent = message;
-notification.className = `scan-notification ${type}`;
-notification.style.display = 'block';
+        elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
+        elements.startButton.className = "btn btn-success";
 
-setTimeout(() => {
-notification.style.display = 'none';
-}, type === 'warning' ? 1500 : 2000);
-}
+        NotificationSystem.show('success', '✅ Escáner optimizado activado. Mejor detección en poca luz habilitada.');
+        
+        // Auto-activar mejoras si es necesario
+        setTimeout(() => {
+            CameraEnhancementSystem.autoEnhance();
+        }, 2000);
+    }
 
-static processBarcodeDetection(code) {
-const cleanCode = code.trim();
-console.log('Código detectado:', cleanCode);
+    static async applyCameraSettings() {
+        if (!currentTrack) return;
 
-// Buscar el paquete en la lista
-const fardoIndex = fardos.findIndex(f => f.paquete === cleanCode);
+        try {
+            // Aplicar configuraciones optimizadas para poca luz
+            await currentTrack.applyConstraints({
+                advanced: [
+                    { exposureCompensation: { ideal: 1.0 } },
+                    { iso: { ideal: 800 } },
+                    { brightness: { ideal: 0.6 } },
+                    { contrast: { ideal: 1.5 } },
+                    { saturation: { ideal: 1.1 } },
+                    { sharpness: { ideal: 0.8 } }
+                ]
+            });
+            console.log('📸 Configuraciones de cámara aplicadas para poca luz');
+        } catch (e) {
+            console.log('⚠️ Algunas configuraciones de cámara no son compatibles:', e.message);
+        }
+    }
 
-if (fardoIndex !== -1) {
-const fardo = fardos[fardoIndex];
+    static showScanNotification(message, type = 'success') {
+        const notification = elements.scanNotification;
+        notification.textContent = message;
+        notification.className = `scan-notification ${type}`;
+        notification.style.display = 'block';
 
-if (!fardo.revisado) {
-// Marcar como completado
-fardo.revisado = true;
-fardo.timestamp = new Date();
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, type === 'warning' ? 1500 : 2000);
+    }
 
-// Actualizar UI
-const fardoElement = document.getElementById(`fardo-${fardoIndex}`);
-if (fardoElement) {
-fardoElement.classList.add('completed');
-}
+    static processBarcodeDetection(code) {
+        const cleanCode = code.trim();
+        console.log('Código detectado:', cleanCode);
 
-// Efectos de éxito
-SoundSystem.playBeep();
-this.showScanNotification(`✅ Paquete ${cleanCode} registrado correctamente`, 'success');
+        // Actualizar estadísticas de detección
+        detectionStats.detections++;
+        detectionStats.lastDetectionTime = Date.now();
 
-// Vibración
-if ('vibrate' in navigator) {
-navigator.vibrate([100]);
-}
+        // Buscar el paquete en la lista
+        const fardoIndex = fardos.findIndex(f => f.paquete === cleanCode);
 
-// Actualizar métricas
-MetricsSystem.update();
+        if (fardoIndex !== -1) {
+            const fardo = fardos[fardoIndex];
 
-} else {
-// Ya fue escaneado
-SoundSystem.playBeep();
-this.showScanNotification(`⚠️ Paquete ${cleanCode} ya fue registrado`, 'warning');
-}
-} else {
-// Paquete no encontrado
-this.showScanNotification(`❌ Paquete ${cleanCode} no está en la lista`, 'error');
-}
-}
+            if (!fardo.revisado) {
+                // Marcar como completado
+                fardo.revisado = true;
+                fardo.timestamp = new Date();
+
+                // Actualizar UI
+                const fardoElement = document.getElementById(`fardo-${fardoIndex}`);
+                if (fardoElement) {
+                    fardoElement.classList.add('completed');
+                }
+
+                // Efectos de éxito
+                SoundSystem.playBeep();
+                this.showScanNotification(`✅ Paquete ${cleanCode} registrado correctamente`, 'success');
+
+                // Vibración
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100]);
+                }
+
+                // Actualizar métricas
+                MetricsSystem.update();
+
+            } else {
+                // Ya fue escaneado
+                SoundSystem.playBeep();
+                this.showScanNotification(`⚠️ Paquete ${cleanCode} ya fue registrado`, 'warning');
+            }
+        } else {
+            // Paquete no encontrado
+            this.showScanNotification(`❌ Paquete ${cleanCode} no está en la lista`, 'error');
+        }
+    }
 }
 
 // Variables para evitar detecciones múltiples
 let lastDetectedCode = null;
 let lastDetectedTime = 0;
-const DETECTION_COOLDOWN = 2000; // 2 segundos entre detecciones del mismo código
+const DETECTION_COOLDOWN = 1500; // Reducido para mejor respuesta
 
-// Evento de detección de código de barras
+// Evento de detección de código de barras MEJORADO
 Quagga.onDetected(function(result) {
-const code = result.codeResult.code;
-const currentTime = Date.now();
+    const code = result.codeResult.code;
+    const currentTime = Date.now();
 
-// Evitar detecciones repetidas
-if (code === lastDetectedCode && (currentTime - lastDetectedTime) < DETECTION_COOLDOWN) {
-return;
-}
+    // Evitar detecciones repetidas
+    if (code === lastDetectedCode && (currentTime - lastDetectedTime) < DETECTION_COOLDOWN) {
+        return;
+    }
 
-lastDetectedCode = code;
-lastDetectedTime = currentTime;
+    // NUEVA VALIDACIÓN DE CALIDAD
+    const confidence = result.codeResult.confidence || 0;
+    if (confidence < 60) { // Filtrar detecciones de baja confianza
+        console.log(`🔍 Código descartado por baja confianza: ${code} (${confidence})`);
+        return;
+    }
 
-// Procesar el código detectado
-ScannerSystem.processBarcodeDetection(code);
+    lastDetectedCode = code;
+    lastDetectedTime = currentTime;
+
+    console.log(`🎯 Código válido detectado: ${code} (Confianza: ${confidence})`);
+
+    // Procesar el código detectado
+    ScannerSystem.processBarcodeDetection(code);
 });
 
-// Dibujar overlay en la cámara
+// Dibujar overlay en la cámara MEJORADO
 Quagga.onProcessed(function (result) {
-const drawingCtx = Quagga.canvas.ctx.overlay;
-const drawingCanvas = Quagga.canvas.dom.overlay;
+    const drawingCtx = Quagga.canvas.ctx.overlay;
+    const drawingCanvas = Quagga.canvas.dom.overlay;
 
-if (!drawingCtx || !drawingCanvas) return;
+    if (!drawingCtx || !drawingCanvas) return;
 
-drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
-// Dibujar cuadro de escaneo fijo en el centro
-const rectWidth = drawingCanvas.width * 0.7;
-const rectHeight = drawingCanvas.height * 0.3;
-const rectX = (drawingCanvas.width - rectWidth) / 2;
-const rectY = (drawingCanvas.height - rectHeight) / 2;
-
-// Cuadro principal
-drawingCtx.lineWidth = 3;
-drawingCtx.strokeStyle = '#10b981';
-drawingCtx.fillStyle = 'rgba(16, 185, 129, 0.1)';
-drawingCtx.fillRect(rectX, rectY, rectWidth, rectHeight);
-drawingCtx.strokeRect(rectX, rectY, rectWidth, rectHeight);
-
-// Esquinas del cuadro de escaneo
-const cornerLength = 20;
-const cornerThickness = 4;
-drawingCtx.lineWidth = cornerThickness;
-drawingCtx.strokeStyle = '#ffffff';
-
-// Esquina superior izquierda
-drawingCtx.beginPath();
-drawingCtx.moveTo(rectX, rectY + cornerLength);
-drawingCtx.lineTo(rectX, rectY);
-drawingCtx.lineTo(rectX + cornerLength, rectY);
-drawingCtx.stroke();
-
-// Esquina superior derecha
-drawingCtx.beginPath();
-drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY);
-drawingCtx.lineTo(rectX + rectWidth, rectY);
-drawingCtx.lineTo(rectX + rectWidth, rectY + cornerLength);
-drawingCtx.stroke();
-
-// Esquina inferior izquierda
-drawingCtx.beginPath();
-drawingCtx.moveTo(rectX, rectY + rectHeight - cornerLength);
-drawingCtx.lineTo(rectX, rectY + rectHeight);
-drawingCtx.lineTo(rectX + cornerLength, rectY + rectHeight);
-drawingCtx.stroke();
-
-// Esquina inferior derecha
-drawingCtx.beginPath();
-drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY + rectHeight);
-drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight);
-drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight - cornerLength);
-drawingCtx.stroke();
-
-// Texto de instrucción
-drawingCtx.fillStyle = '#ffffff';
-drawingCtx.font = '16px Arial';
-drawingCtx.textAlign = 'center';
-drawingCtx.fillText('Coloque el código de barras dentro del marco', 
-                   drawingCanvas.width / 2, rectY - 10);
-
-// Dibujar códigos detectados
-if (result) {
-if (result.boxes) {
-result.boxes
-.filter((box) => box !== result.box)
-.forEach((box) => {
-drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-drawingCtx.lineWidth = 2;
-drawingCtx.beginPath();
-box.forEach((point, index) => {
-if (index === 0) {
-drawingCtx.moveTo(point[0], point[1]);
-} else {
-drawingCtx.lineTo(point[0], point[1]);
-}
-});
-drawingCtx.closePath();
-drawingCtx.stroke();
-});
-}
-
-if (result.box) {
-drawingCtx.strokeStyle = "#00ff00";
-drawingCtx.lineWidth = 3;
-drawingCtx.beginPath();
-result.box.forEach((point, index) => {
-if (index === 0) {
-drawingCtx.moveTo(point[0], point[1]);
-} else {
-drawingCtx.lineTo(point[0], point[1]);
-}
-});
-drawingCtx.closePath();
-drawingCtx.stroke();
-}
-
-if (result.codeResult && result.codeResult.code) {
-drawingCtx.fillStyle = "#00ff00";
-drawingCtx.font = "bold 16px Arial";
-drawingCtx.textAlign = "left";
-drawingCtx.fillText(result.codeResult.code, 10, 30);
-}
-}
-});
-
-// Inicialización del sistema
-document.addEventListener('DOMContentLoaded', function() {
-console.log('Inicializando KALAF SOFT System...');
+    // ANÁLISIS DE ILUMINACIÓN
+    const imageData = drawingCtx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
+    const brightness = this.analyzeBrightness(imageData);
+    const lightLevel = brightness > 120 ? 'Alta' : brightness > 80 ? 'Media' : 'Baja';
+    const quality = result ? (result.codeResult ? 'Buena' : 'Regular') : 'Buscando...';
     
-// Verificar disponibilidad de APIs necesarias
-if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-NotificationSystem.show('error', '❌ Tu navegador no soporta acceso a cámara. Usa Chrome o Firefox moderno.');
-return;
+    // Actualizar estadísticas
+    CameraEnhancementSystem.updateDetectionStats(lightLevel, quality);
+
+    // Dibujar cuadro de escaneo adaptativo según la luz
+    const rectWidth = drawingCanvas.width * 0.75;
+    const rectHeight = drawingCanvas.height * 0.35;
+    const rectX = (drawingCanvas.width - rectWidth) / 2;
+    const rectY = (drawingCanvas.height - rectHeight) / 2;
+
+    // Color del cuadro según la iluminación
+    let strokeColor = '#10b981'; // Verde por defecto
+    let fillColor = 'rgba(16, 185, 129, 0.1)';
+    
+    if (lightLevel === 'Baja') {
+        strokeColor = '#f59e0b'; // Amarillo para poca luz
+        fillColor = 'rgba(245, 158, 11, 0.15)';
+    } else if (lightLevel === 'Media') {
+        strokeColor = '#3b82f6'; // Azul para luz media
+        fillColor = 'rgba(59, 130, 246, 0.1)';
+    }
+
+    // Cuadro principal
+    drawingCtx.lineWidth = 3;
+    drawingCtx.strokeStyle = strokeColor;
+    drawingCtx.fillStyle = fillColor;
+    drawingCtx.fillRect(rectX, rectY, rectWidth, rectHeight);
+    drawingCtx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+
+    // Esquinas del cuadro de escaneo mejoradas
+    const cornerLength = 25;
+    const cornerThickness = 5;
+    drawingCtx.lineWidth = cornerThickness;
+    drawingCtx.strokeStyle = '#ffffff';
+
+    // Esquinas con sombra
+    drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    drawingCtx.shadowBlur = 2;
+    drawingCtx.shadowOffsetX = 1;
+    drawingCtx.shadowOffsetY = 1;
+
+    // Esquina superior izquierda
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(rectX, rectY + cornerLength);
+    drawingCtx.lineTo(rectX, rectY);
+    drawingCtx.lineTo(rectX + cornerLength, rectY);
+    drawingCtx.stroke();
+
+    // Esquina superior derecha
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY);
+    drawingCtx.lineTo(rectX + rectWidth, rectY);
+    drawingCtx.lineTo(rectX + rectWidth, rectY + cornerLength);
+    drawingCtx.stroke();
+
+    // Esquina inferior izquierda
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(rectX, rectY + rectHeight - cornerLength);
+    drawingCtx.lineTo(rectX, rectY + rectHeight);
+    drawingCtx.lineTo(rectX + cornerLength, rectY + rectHeight);
+    drawingCtx.stroke();
+
+    // Esquina inferior derecha
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY + rectHeight);
+    drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight);
+    drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight - cornerLength);
+    drawingCtx.stroke();
+
+    // Resetear sombra
+    drawingCtx.shadowColor = 'transparent';
+    drawingCtx.shadowBlur = 0;
+    drawingCtx.shadowOffsetX = 0;
+    drawingCtx.shadowOffsetY = 0;
+
+    // Texto de instrucción adaptativo
+    drawingCtx.fillStyle = '#ffffff';
+    drawingCtx.font = 'bold 16px Arial';
+    drawingCtx.textAlign = 'center';
+    drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    drawingCtx.shadowBlur = 3;
+    
+    let instructionText = 'Coloque el código de barras dentro del marco';
+    if (lightLevel === 'Baja') {
+        instructionText = '💡 Poca luz detectada - Use el flash o mueva a mejor iluminación';
+    }
+    
+    drawingCtx.fillText(instructionText, drawingCanvas.width / 2, rectY - 15);
+
+    // Indicador de estado en tiempo real
+    drawingCtx.font = '14px Arial';
+    drawingCtx.fillStyle = strokeColor;
+    drawingCtx.fillText(`Luz: ${lightLevel} | Calidad: ${quality}`, 
+                       drawingCanvas.width / 2, rectY + rectHeight + 25);
+
+    // Línea de escaneo animada
+    const scanLineY = rectY + (rectHeight / 2) + Math.sin(Date.now() / 200) * 10;
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(rectX, scanLineY);
+    drawingCtx.lineTo(rectX + rectWidth, scanLineY);
+    drawingCtx.lineWidth = 2;
+    drawingCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    drawingCtx.stroke();
+
+    // Resetear sombra
+    drawingCtx.shadowColor = 'transparent';
+    drawingCtx.shadowBlur = 0;
+
+    // Dibujar códigos detectados con mejor visualización
+    if (result) {
+        if (result.boxes) {
+            result.boxes
+                .filter((box) => box !== result.box)
+                .forEach((box) => {
+                    drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+                    drawingCtx.lineWidth = 2;
+                    drawingCtx.beginPath();
+                    box.forEach((point, index) => {
+                        if (index === 0) {
+                            drawingCtx.moveTo(point[0], point[1]);
+                        } else {
+                            drawingCtx.lineTo(point[0], point[1]);
+                        }
+                    });
+                    drawingCtx.closePath();
+                    drawingCtx.stroke();
+                });
+        }
+
+        if (result.box) {
+            // Código detectado con animación
+            const pulseIntensity = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+            drawingCtx.strokeStyle = `rgba(0, 255, 0, ${pulseIntensity})`;
+            drawingCtx.lineWidth = 4;
+            drawingCtx.beginPath();
+            result.box.forEach((point, index) => {
+                if (index === 0) {
+                    drawingCtx.moveTo(point[0], point[1]);
+                } else {
+                    drawingCtx.lineTo(point[0], point[1]);
+                }
+            });
+            drawingCtx.closePath();
+            drawingCtx.stroke();
+
+            // Sombra del código detectado
+            drawingCtx.strokeStyle = "rgba(0, 255, 0, 0.3)";
+            drawingCtx.lineWidth = 8;
+            drawingCtx.stroke();
+        }
+
+        if (result.codeResult && result.codeResult.code) {
+            // Mostrar código detectado con mejor estilo
+            const confidence = result.codeResult.confidence || 0;
+            drawingCtx.fillStyle = confidence > 80 ? "#00ff00" : "#ffff00";
+            drawingCtx.font = "bold 18px Arial";
+            drawingCtx.textAlign = "left";
+            drawingCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            drawingCtx.shadowBlur = 3;
+            drawingCtx.fillText(`${result.codeResult.code} (${Math.round(confidence)}%)`, 15, 35);
+            drawingCtx.shadowColor = 'transparent';
+            drawingCtx.shadowBlur = 0;
+        }
+    }
+});
+
+// Función para analizar brillo de la imagen
+function analyzeBrightness(imageData) {
+    const data = imageData.data;
+    let totalBrightness = 0;
+    const pixelCount = data.length / 4;
+    
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // Calcular luminancia usando la fórmula estándar
+        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+        totalBrightness += brightness;
+    }
+    
+    return totalBrightness / pixelCount;
 }
 
-// Inicializar módulos
-SoundSystem.init(); // Inicializar sistema de sonido
-FileSystem.init();
-ScannerSystem.init();
-MetricsSystem.update();
+// Inicialización del sistema MEJORADA
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando KALAF SOFT System v2.2.0 - Optimizado para poca luz...');
+        
+    // Verificar disponibilidad de APIs necesarias
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        NotificationSystem.show('error', '❌ Tu navegador no soporta acceso a cámara. Usa Chrome o Firefox moderno.');
+        return;
+    }
 
-console.log('Sistema inicializado correctamente');
-NotificationSystem.show('success', '✅ Sistema KALAF SOFT listo. Carga un archivo Excel para comenzar.', 3000);
+    // Inicializar módulos
+    SoundSystem.init();
+    CameraEnhancementSystem.init(); // NUEVO
+    FileSystem.init();
+    ScannerSystem.init();
+    MetricsSystem.update();
+
+    console.log('✅ Sistema inicializado correctamente con mejoras para poca luz');
+    NotificationSystem.show('success', '✅ Sistema KALAF SOFT v2.2.0 listo. Optimizado para detección en poca luz.', 4000);
 });
 
 // Manejo de errores globales
 window.addEventListener('error', function(e) {
-console.error('Error global:', e.error);
-NotificationSystem.show('error', '❌ Se produjo un error en el sistema. Recarga la página si persiste.');
+    console.error('Error global:', e.error);
+    NotificationSystem.show('error', '❌ Se produjo un error en el sistema. Recarga la página si persiste.');
 });
 
-// Manejo de permisos de cámara
+// Manejo de permisos de cámara mejorado
 navigator.permissions?.query({name: 'camera'}).then(function(result) {
-console.log('Estado de permisos de cámara:', result.state);
-if (result.state === 'denied') {
-NotificationSystem.show('warning', '⚠️ Los permisos de cámara están denegados. Habilítalos en la configuración del navegador.');
-}
+    console.log('Estado de permisos de cámara:', result.state);
+    if (result.state === 'denied') {
+        NotificationSystem.show('warning', '⚠️ Los permisos de cámara están denegados. Habilítalos en la configuración del navegador.');
+    }
+    
+    result.onchange = function() {
+        if (result.state === 'granted') {
+            NotificationSystem.show('success', '✅ Permisos de cámara concedidos. Ya puedes usar el escáner.');
+        }
+    };
 });
 
-// Optimizaciones de rendimiento
-if ('requestIdleCallback' in window) {
-requestIdleCallback(() => {
-console.log('Optimizaciones de rendimiento aplicadas');
+// Detección de cambios en la conectividad
+window.addEventListener('online', function() {
+    console.log('🌐 Conexión restaurada');
+    elements.connectionStatus.className = 'connection-status';
 });
+
+window.addEventListener('offline', function() {
+    console.log('🚫 Sin conexión a internet');
+    elements.connectionStatus.className = 'connection-status offline';
+});
+
+// Optimizaciones de rendimiento mejoradas
+if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+        // Pre-cargar recursos cuando el sistema esté inactivo
+        console.log('🔧 Aplicando optimizaciones de rendimiento...');
+        
+        // Optimizar detección de códigos
+        if (typeof Quagga !== 'undefined') {
+            Quagga.ImageWrapper.prototype.invert = function() {
+                // Invertir imagen para mejor detección en poca luz
+                const data = this.data;
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = 255 - data[i];
+                }
+            };
+        }
+    });
 }
 
 // Prevenir zoom en dispositivos móviles
 document.addEventListener('touchstart', function(event) {
-if (event.touches.length > 1) {
-event.preventDefault();
-}
+    if (event.touches.length > 1) {
+        event.preventDefault();
+    }
 });
 
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(event) {
-const now = (new Date()).getTime();
-if (now - lastTouchEnd <= 300) {
-event.preventDefault();
-}
-lastTouchEnd = now;
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
 }, false);
+
+// Atajos de teclado para desarrolladores
+document.addEventListener('keydown', function(e) {
+    // Ctrl + Shift + D = Activar/Desactivar debug
+    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        console.log('🔧 Modo debug activado');
+        SoundSystem.testAudio();
+        e.preventDefault();
+    }
+    
+    // Ctrl + Shift + L = Toggle modo poca luz
+    if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+        console.log('💡 Toggle modo poca luz');
+        if (isQuaggaStarted) {
+            CameraEnhancementSystem.autoEnhance();
+        }
+        e.preventDefault();
+    }
+    
+    // Ctrl + Shift + F = Toggle flash
+    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+        console.log('🔦 Toggle flash');
+        if (isQuaggaStarted && CameraEnhancementSystem.torchSupported) {
+            CameraEnhancementSystem.toggleTorch();
+        }
+        e.preventDefault();
+    }
+});
+
+// Función de diagnóstico completo
+window.diagnosticSystem = function() {
+    console.log('🔍 === DIAGNÓSTICO COMPLETO DEL SISTEMA ===');
+    console.log('Estado general:');
+    console.log('- Sistema listo:', systemReady);
+    console.log('- Escáner activo:', isQuaggaStarted);
+    console.log('- Paquetes cargados:', fardos.length);
+    console.log('- Audio cargado:', SoundSystem.audioLoaded);
+    console.log('- Usuario interactuó:', SoundSystem.userInteracted);
+    console.log('- Flash soportado:', CameraEnhancementSystem.torchSupported);
+    console.log('- Auto mejora activa:', CameraEnhancementSystem.autoEnhanceEnabled);
+    console.log('Estadísticas de detección:');
+    console.log('- Detecciones totales:', detectionStats.detections);
+    console.log('- Nivel de luz:', detectionStats.lightLevel);
+    console.log('- Calidad:', detectionStats.qualityScore);
+    console.log('Configuración de cámara:');
+    console.log('- Brillo:', CameraEnhancementSystem.brightness);
+    console.log('- Contraste:', CameraEnhancementSystem.contrast);
+    console.log('- Flash activo:', CameraEnhancementSystem.torchEnabled);
+    console.log('==========================================');
+};
+
+console.log('💡 Tip: Ejecuta diagnosticSystem() en la consola para un diagnóstico completo');
+console.log('🎯 Sistema optimizado para detección en poca luz - v2.2.0');
 </script>
 </body>
 </html>
