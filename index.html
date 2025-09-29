@@ -1,1595 +1,1345 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>KALAF SOFT - Sistema Check List de Paquetes</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-<style>
-:root {
---primary-color: #1e3a8a;
---primary-light: #3b82f6;
---secondary-color: #059669;
---secondary-light: #10b981;
---accent-color: #dc2626;
---accent-light: #ef4444;
---warning-color: #d97706;
---warning-light: #f59e0b;
---dark-color: #1f2937;
---light-color: #f8fafc;
---border-radius: 12px;
---shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
---shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
---transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-* {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-}
-
-body {
-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-color: var(--dark-color);
-line-height: 1.6;
-}
-
-.app-container {
-min-height: 100vh;
-display: flex;
-flex-direction: column;
-}
-
-.app-header {
-background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-color: white;
-padding: 1rem 2rem;
-box-shadow: var(--shadow-lg);
-position: relative;
-}
-
-.version {
-position: absolute;
-top: 10px;
-right: 20px;
-background: rgba(255, 255, 255, 0.2);
-padding: 4px 8px;
-border-radius: 4px;
-font-size: 0.8rem;
-font-weight: 500;
-}
-
-.connection-status {
-position: absolute;
-top: 10px;
-left: 20px;
-width: 12px;
-height: 12px;
-background: var(--secondary-light);
-border-radius: 50%;
-box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-}
-
-.connection-status.offline {
-background: var(--accent-light);
-box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-
-.logo-section {
-display: flex;
-align-items: center;
-gap: 1rem;
-margin-top: 1rem;
-}
-
-.logo {
-font-size: 3rem;
-line-height: 1;
-}
-
-.company-info h1 {
-font-size: 2rem;
-font-weight: 700;
-margin-bottom: 0.25rem;
-}
-
-.company-info p {
-font-size: 1.1rem;
-opacity: 0.9;
-font-weight: 300;
-}
-
-.main-content {
-flex: 1;
-padding: 2rem;
-max-width: 1200px;
-margin: 0 auto;
-width: 100%;
-}
-
-.card {
-background: white;
-border-radius: var(--border-radius);
-box-shadow: var(--shadow);
-margin-bottom: 2rem;
-overflow: hidden;
-border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
-background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-padding: 1rem 1.5rem;
-border-bottom: 1px solid #e2e8f0;
-font-weight: 600;
-font-size: 1.1rem;
-display: flex;
-align-items: center;
-gap: 0.5rem;
-color: var(--dark-color);
-}
-
-.card-body {
-padding: 1.5rem;
-}
-
-.alert {
-padding: 1rem 1.5rem;
-margin-bottom: 1rem;
-border-radius: var(--border-radius);
-display: none;
-font-weight: 500;
-}
-
-.alert-success {
-background: #d1fae5;
-color: #065f46;
-border: 1px solid #a7f3d0;
-}
-
-.alert-error {
-background: #fee2e2;
-color: #991b1b;
-border: 1px solid #fecaca;
-}
-
-.alert-warning {
-background: #fef3c7;
-color: #92400e;
-border: 1px solid #fde68a;
-}
-
-.file-input-wrapper {
-position: relative;
-margin-bottom: 1rem;
-}
-
-.file-input {
-position: absolute;
-opacity: 0;
-width: 0;
-height: 0;
-}
-
-.file-input-label {
-display: inline-flex;
-align-items: center;
-gap: 0.5rem;
-padding: 0.75rem 1.5rem;
-background: var(--primary-color);
-color: white;
-border-radius: var(--border-radius);
-cursor: pointer;
-font-weight: 500;
-transition: var(--transition);
-box-shadow: var(--shadow);
-}
-
-.file-input-label:hover {
-background: var(--primary-light);
-transform: translateY(-1px);
-box-shadow: var(--shadow-lg);
-}
-
-.file-input-label.has-file {
-background: var(--secondary-color);
-}
-
-.btn {
-display: inline-flex;
-align-items: center;
-gap: 0.5rem;
-padding: 0.75rem 1.5rem;
-border: none;
-border-radius: var(--border-radius);
-font-weight: 500;
-cursor: pointer;
-transition: var(--transition);
-font-size: 1rem;
-box-shadow: var(--shadow);
-margin-right: 0.5rem;
-margin-bottom: 0.5rem;
-}
-
-.btn:disabled {
-opacity: 0.5;
-cursor: not-allowed;
-transform: none !important;
-}
-
-.btn:hover:not(:disabled) {
-transform: translateY(-1px);
-box-shadow: var(--shadow-lg);
-}
-
-.btn-danger {
-background: var(--accent-color);
-color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-background: var(--accent-light);
-}
-
-.btn-success {
-background: var(--secondary-color);
-color: white;
-}
-
-.btn-success:hover:not(:disabled) {
-background: var(--secondary-light);
-}
-
-.btn-warning {
-background: var(--warning-color);
-color: white;
-}
-
-.btn-warning:hover:not(:disabled) {
-background: var(--warning-light);
-}
-
-.btn-small {
-padding: 0.5rem 1rem;
-font-size: 0.9rem;
-}
-
-/* Controles simples para poca luz */
-.light-controls {
-display: none;
-background: #f8fafc;
-border: 1px solid #e2e8f0;
-border-radius: var(--border-radius);
-padding: 1rem;
-margin-bottom: 1rem;
-}
-
-.light-controls.show {
-display: block;
-}
-
-.light-controls h4 {
-margin: 0 0 0.75rem 0;
-color: var(--dark-color);
-font-size: 1rem;
-}
-
-.control-group {
-display: flex;
-gap: 0.5rem;
-flex-wrap: wrap;
-align-items: center;
-}
-
-.metrics-grid {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-gap: 1rem;
-margin-bottom: 2rem;
-}
-
-.metric-card {
-background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-padding: 1.5rem;
-border-radius: var(--border-radius);
-text-align: center;
-border: 2px solid transparent;
-transition: var(--transition);
-}
-
-.metric-card.total {
-border-color: var(--primary-light);
-background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-}
-
-.metric-card.success {
-border-color: var(--secondary-light);
-background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-}
-
-.metric-card.pending {
-border-color: var(--warning-light);
-background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-}
-
-.metric-value {
-font-size: 2.5rem;
-font-weight: 700;
-color: var(--dark-color);
-line-height: 1;
-}
-
-.metric-label {
-font-size: 0.9rem;
-color: #6b7280;
-font-weight: 500;
-margin-top: 0.5rem;
-}
-
-.progress-container {
-margin-top: 1rem;
-}
-
-.progress-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 0.5rem;
-}
-
-.progress-label {
-font-weight: 600;
-color: var(--dark-color);
-}
-
-.progress-percentage {
-font-weight: 700;
-color: var(--primary-color);
-}
-
-.progress-bar {
-background: #e5e7eb;
-height: 12px;
-border-radius: 6px;
-overflow: hidden;
-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.progress-fill {
-background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
-height: 100%;
-width: 0%;
-transition: width 0.5s ease;
-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.camera-container {
-position: relative;
-background: #000;
-border-radius: var(--border-radius);
-overflow: hidden;
-aspect-ratio: 16/9;
-max-height: 400px;
-}
-
-.camera-container.enhanced {
-filter: brightness(1.3) contrast(1.4);
-}
-
-.camera-placeholder {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-height: 100%;
-color: #9ca3af;
-font-size: 1.1rem;
-}
-
-.camera-placeholder i {
-font-size: 3rem;
-margin-bottom: 1rem;
-opacity: 0.5;
-}
-
-.camera-overlay {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-pointer-events: none;
-z-index: 10;
-}
-
-#scanner_canvas {
-position: absolute;
-top: 0;
-left: 0;
-width: 100% !important;
-height: 100% !important;
-}
-
-.fardos-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-gap: 1rem;
-max-height: 400px;
-overflow-y: auto;
-}
-
-.fardo-item {
-background: white;
-border: 2px solid #e5e7eb;
-border-radius: var(--border-radius);
-padding: 1rem;
-text-align: center;
-font-weight: 600;
-transition: var(--transition);
-cursor: pointer;
-}
-
-.fardo-item:hover {
-border-color: var(--primary-light);
-transform: translateY(-2px);
-box-shadow: var(--shadow);
-}
-
-.fardo-item.completed {
-background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-border-color: var(--secondary-light);
-color: var(--secondary-color);
-}
-
-.app-footer {
-background: var(--dark-color);
-color: white;
-padding: 1rem 2rem;
-display: flex;
-justify-content: space-between;
-align-items: center;
-font-size: 0.9rem;
-}
-
-.status {
-display: flex;
-align-items: center;
-gap: 0.5rem;
-}
-
-.scan-notification {
-position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-background: var(--secondary-color);
-color: white;
-padding: 1rem 2rem;
-border-radius: var(--border-radius);
-font-weight: 600;
-font-size: 1.2rem;
-z-index: 1000;
-box-shadow: var(--shadow-lg);
-display: none;
-}
-
-.scan-notification.warning {
-background: var(--warning-color);
-}
-
-.scan-notification.error {
-background: var(--accent-color);
-}
-
-.loading-spinner {
-width: 20px;
-height: 20px;
-border: 2px solid #f3f4f6;
-border-top: 2px solid var(--primary-color);
-border-radius: 50%;
-animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-0% { transform: rotate(0deg); }
-100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-.main-content {
-padding: 1rem;
-}
-
-.app-header {
-padding: 1rem;
-}
-
-.logo-section {
-flex-direction: column;
-text-align: center;
-gap: 0.5rem;
-}
-
-.company-info h1 {
-font-size: 1.5rem;
-}
-
-.metrics-grid {
-grid-template-columns: 1fr;
-}
-
-.fardos-grid {
-grid-template-columns: 1fr;
-}
-
-.control-group {
-justify-content: center;
-}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist de Fardos - Sistema Profesional</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        .logo {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: white;
+            border-radius: 8px;
+            padding: 5px;
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 0.8em;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+        }
+
+        .file-upload {
+            border: 2px dashed #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            background: #f0f8f0;
+            border-color: #45a049;
+        }
+
+        .file-upload.dragover {
+            background: #e8f5e8;
+            border-color: #45a049;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-upload-icon {
+            font-size: 2em;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .scanner-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .scanner-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .scanner-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .search-filter {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .filter-select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .checklist-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        .fardo-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s ease;
+            gap: 15px;
+        }
+
+        .fardo-item:hover {
+            background: #f8f9fa;
+        }
+
+        .fardo-item.checked {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .fardo-item.missing {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+
+        .checkbox {
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            accent-color: #4CAF50;
+        }
+
+        .fardo-info h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .fardo-details {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .fardo-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-found {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .timestamp {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        .progress-section {
+            background: #e9ecef;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #dee2e6;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .export-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .bluetooth-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .bluetooth-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2196F3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .fardo-item {
+                grid-template-columns: auto 1fr;
+                grid-template-rows: auto auto;
+                gap: 10px;
+            }
+            
+            .fardo-status {
+                grid-column: 2;
+                justify-self: end;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-<div class="app-container">
-<!-- Header profesional -->
-<header class="app-header">
-<div class="version">v2.1.1</div>
-<div class="connection-status" id="connection-status"></div>
-<div class="logo-section">
-<div class="logo">📋</div>
-<div class="company-info">
-<h1>KALAF SOFT</h1>
-<p>Sistema Check List de Paquetes de Piso</p>
-</div>
-</div>
-</header>
+    <div class="container">
+        <div class="header">
+            <div class="logo">GIBOR</div>
+            <h1>📦 Sistema de Checklist de Fardos</h1>
+            <div class="subtitle">Control de Inventario Profesional</div>
+        </div>
 
-<main class="main-content">
-<!-- Sistema de alertas -->
-<div class="alert alert-error" id="alert-error"></div>
-<div class="alert alert-success" id="alert-success"></div>
-<div class="alert alert-warning" id="alert-warning"></div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-number" id="totalFardos">0</div>
+                <div class="stat-label">Total Fardos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="fardosEncontrados">0</div>
+                <div class="stat-label">Encontrados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="fardosPendientes">0</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="porcentajeCompleto">0%</div>
+                <div class="stat-label">Completado</div>
+            </div>
+        </div>
 
-<!-- Configuración del sistema -->
-<div class="card">
-<div class="card-header">
-<i class="fas fa-cog"></i>
-Configuración del Sistema
-</div>
-<div class="card-body">
-<div class="file-input-wrapper">
-<input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls" />
-<label for="fileInput" class="file-input-label" id="file-label">
-<i class="fas fa-upload"></i>
-<span>Seleccionar Archivo Excel</span>
-</label>
-</div>
-<button id="start-button" class="btn btn-danger" disabled>
-<i class="fas fa-camera"></i>
-<span>Activar Escáner</span>
-</button>
-</div>
-</div>
+        <div class="controls">
+            <!-- Carga de archivo -->
+            <div class="file-upload" id="fileUpload">
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+                <div class="file-upload-icon">📁</div>
+                <div><strong>Cargar archivo Excel</strong></div>
+                <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    Arrastra y suelta o haz clic para seleccionar
+                </div>
+            </div>
 
-<!-- Dashboard de métricas -->
-<div class="card">
-<div class="card-header">
-<i class="fas fa-chart-bar"></i>
-Panel de Control
-</div>
-<div class="card-body">
-<div class="metrics-grid">
-<div class="metric-card total">
-<div class="metric-value" id="total-count">0</div>
-<div class="metric-label">Total</div>
-</div>
-<div class="metric-card success">
-<div class="metric-value" id="completed-count">0</div>
-<div class="metric-label">Completados</div>
-</div>
-<div class="metric-card pending">
-<div class="metric-value" id="pending-count">0</div>
-<div class="metric-label">Pendientes</div>
-</div>
-</div>
+            <!-- Escáner de código de barras -->
+            <div class="scanner-section">
+                <div class="bluetooth-status">
+                    <div class="bluetooth-indicator"></div>
+                    <strong>🔵 Escáner Bluetooth Listo</strong>
+                    <span style="margin-left: auto; font-size: 0.9em; color: #666;">
+                        Recomendado: INATECK BCST-60
+                    </span>
+                </div>
+                <input type="text" id="barcodeInput" class="scanner-input" 
+                       placeholder="🔍 Escanea o escribe código de fardo..." 
+                       autocomplete="off">
+                <div style="font-size: 0.9em; color: #666; text-align: center;">
+                    Compatible con lectores Bluetooth. Se detecta automáticamente.
+                </div>
+            </div>
 
-<div class="progress-container">
-<div class="progress-header">
-<span class="progress-label">Progreso General</span>
-<span class="progress-percentage" id="progress-percentage">0%</span>
-</div>
-<div class="progress-bar">
-<div class="progress-fill" id="progress-fill"></div>
-</div>
-</div>
-</div>
-</div>
+            <!-- Búsqueda y filtros -->
+            <div class="search-filter">
+                <input type="text" id="searchInput" class="search-input" 
+                       placeholder="🔍 Buscar fardo por número...">
+                <select id="filterStatus" class="filter-select">
+                    <option value="all">Todos los estados</option>
+                    <option value="found">Encontrados</option>
+                    <option value="pending">Pendientes</option>
+                    <option value="missing">Faltantes</option>
+                </select>
+            </div>
 
-<!-- Cámara del escáner -->
-<div class="card">
-<div class="card-header">
-<i class="fas fa-qrcode"></i>
-Escáner de Códigos de Barras
-</div>
-<div class="card-body">
-<!-- Controles simples para poca luz -->
-<div class="light-controls" id="light-controls">
-<h4><i class="fas fa-adjust"></i> Mejoras para Poca Luz</h4>
-<div class="control-group">
-<button id="enhance-btn" class="btn btn-warning btn-small">
-<i class="fas fa-sun"></i> Mejorar Brillo
-</button>
-<button id="torch-btn" class="btn btn-warning btn-small" style="display: none;">
-<i class="fas fa-flashlight"></i> Flash
-</button>
-<button id="reset-btn" class="btn btn-success btn-small">
-<i class="fas fa-refresh"></i> Normal
-</button>
-</div>
-</div>
+            <!-- Botones de acción -->
+            <div class="buttons-grid">
+                <button class="btn btn-primary" onclick="cargarEjemplo()">
+                    📋 Cargar Ejemplo
+                </button>
+                <button class="btn btn-secondary" onclick="limpiarTodo()">
+                    🗑️ Limpiar Todo
+                </button>
+                <button class="btn btn-warning" onclick="marcarFaltantes()">
+                    ⚠️ Marcar Faltantes
+                </button>
+                <button class="btn btn-info" onclick="mostrarReporte()">
+                    📊 Ver Reporte
+                </button>
+            </div>
+        </div>
 
-<div class="camera-container" id="camera-container">
-<div class="camera-placeholder" id="camera-placeholder">
-<i class="fas fa-camera"></i>
-<div>Presiona "Activar Escáner" para comenzar</div>
-</div>
-<div class="camera-overlay"></div>
-</div>
-</div>
-</div>
+        <!-- Barra de progreso -->
+        <div class="progress-section">
+            <h3>Progreso del Checklist</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+            <div style="font-size: 0.9em; color: #666; text-align: center;" id="progressText">
+                Carga un archivo Excel para comenzar
+            </div>
+        </div>
 
-<!-- Lista de paquetes -->
-<div class="card">
-<div class="card-header">
-<i class="fas fa-list-check"></i>
-Lista de Paquetes de Piso
-<span class="loading-spinner" id="loading-spinner" style="display: none; margin-left: auto;"></span>
-</div>
-<div class="card-body">
-<div class="fardos-grid" id="fardos-grid">
-<div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 40px 20px; font-size: 14px;">
-<i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-Carga un archivo Excel para mostrar los paquetes
-</div>
-</div>
-</div>
-</div>
-</main>
+        <!-- Lista de fardos -->
+        <div class="checklist-container" id="checklistContainer">
+            <div class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <h3>No hay fardos cargados</h3>
+                <p>Carga un archivo Excel o usa el ejemplo para comenzar</p>
+            </div>
+        </div>
 
-<!-- Footer de la app -->
-<footer class="app-footer">
-<div class="status">
-<i class="fas fa-shield-check"></i>
-Sistema Activo
-</div>
-<div>© 2024 KALAF SOFT</div>
-</footer>
+        <!-- Sección de exportación -->
+        <div class="export-section">
+            <h3>📤 Exportar Resultados</h3>
+            <div class="buttons-grid">
+                <button class="btn btn-primary" onclick="exportarExcel()">
+                    📊 Exportar Excel
+                </button>
+                <button class="btn btn-info" onclick="exportarPDF()">
+                    📄 Exportar PDF
+                </button>
+                <button class="btn btn-warning" onclick="exportarFaltantes()">
+                    ⚠️ Solo Faltantes
+                </button>
+            </div>
+        </div>
+    </div>
 
-<!-- Notificación de escaneo -->
-<div class="scan-notification" id="scan-notification"></div>
-</div>
+    <!-- Modal de reporte -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h2>📊 Reporte Detallado</h2>
+            <div id="reportContent"></div>
+        </div>
+    </div>
 
-<script>
-// Variables del sistema
-let fardos = [];
-let isQuaggaStarted = false;
-let systemReady = false;
-let currentTrack = null;
-let enhanced = false;
-let torchEnabled = false;
+    <script>
+        let fardosData = [];
+        let checklistData = new Map();
+        let currentFilter = 'all';
+        let currentSearch = '';
 
-// Referencias a elementos DOM
-const elements = {
-fileInput: document.getElementById("fileInput"),
-fileLabel: document.getElementById("file-label"),
-startButton: document.getElementById("start-button"),
-cameraContainer: document.getElementById("camera-container"),
-cameraPlaceholder: document.getElementById("camera-placeholder"),
-fardosGrid: document.getElementById("fardos-grid"),
-scanNotification: document.getElementById("scan-notification"),
-connectionStatus: document.getElementById("connection-status"),
-loadingSpinner: document.getElementById("loading-spinner"),
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            cargarDatosGuardados();
+            console.log('🚀 Sistema de Checklist de Fardos iniciado');
+        });
 
-// Contadores
-totalCount: document.getElementById("total-count"),
-completedCount: document.getElementById("completed-count"),
-pendingCount: document.getElementById("pending-count"),
-progressFill: document.getElementById("progress-fill"),
-progressPercentage: document.getElementById("progress-percentage"),
+        function initializeEventListeners() {
+            // Drag & Drop para archivo
+            const fileUpload = document.getElementById('fileUpload');
+            const fileInput = document.getElementById('fileInput');
+            
+            fileUpload.addEventListener('click', () => fileInput.click());
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.classList.add('dragover');
+            });
+            fileUpload.addEventListener('dragleave', () => {
+                fileUpload.classList.remove('dragover');
+            });
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    procesarArchivo(e.dataTransfer.files[0]);
+                }
+            });
 
-// Alertas
-alertError: document.getElementById("alert-error"),
-alertSuccess: document.getElementById("alert-success"),
-alertWarning: document.getElementById("alert-warning"),
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    procesarArchivo(e.target.files[0]);
+                }
+            });
 
-// Controles de luz
-lightControls: document.getElementById("light-controls"),
-enhanceBtn: document.getElementById("enhance-btn"),
-torchBtn: document.getElementById("torch-btn"),
-resetBtn: document.getElementById("reset-btn")
-};
+            // Escáner de código de barras
+            const barcodeInput = document.getElementById('barcodeInput');
+            barcodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    procesarCodigoEscaneado(barcodeInput.value.trim());
+                    barcodeInput.value = '';
+                }
+            });
 
-// Sistema de sonido mejorado - SOLO MP3, SIN FALLBACK
-class SoundSystem {
-    static init() {
-        this.audioLoaded = false;
-        this.audioElement = null;
-        this.userInteracted = false;
-        
-        console.log('🎵 Inicializando sistema de audio - SOLO MP3');
-        
-        // Detectar primera interacción del usuario
-        this.setupUserInteraction();
-        
-        // Crear múltiples instancias para mejor compatibilidad
-        this.createAudioInstances();
-        
-        // Intentar cargar de diferentes maneras
-        this.tryLoadAudio();
-    }
-    
-    static setupUserInteraction() {
-        // Detectar cuando el usuario hace clic en cualquier parte
-        const enableAudio = () => {
-            if (!this.userInteracted) {
-                this.userInteracted = true;
-                console.log('✅ Interacción del usuario detectada - Audio habilitado');
+            // Auto-submit después de escanear (para lectores rápidos)
+            let scanTimeout;
+            barcodeInput.addEventListener('input', (e) => {
+                clearTimeout(scanTimeout);
+                const codigo = e.target.value.trim();
                 
-                // Crear contexto de audio si es necesario
-                if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (!this.audioContext) {
-                        this.audioContext = new AudioCtx();
-                        if (this.audioContext.state === 'suspended') {
-                            this.audioContext.resume();
-                        }
+                if (codigo.length >= 3) {
+                    scanTimeout = setTimeout(() => {
+                        procesarCodigoEscaneado(codigo);
+                        barcodeInput.value = '';
+                    }, 500);
+                }
+            });
+
+            // Búsqueda y filtros
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                currentSearch = e.target.value.toLowerCase();
+                renderizarLista();
+            });
+
+            document.getElementById('filterStatus').addEventListener('change', (e) => {
+                currentFilter = e.target.value;
+                renderizarLista();
+            });
+        }
+
+        function procesarArchivo(file) {
+            mostrarNotificacion('Procesando archivo...', 'warning');
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets["Packing List"];
+                    
+                    if (!sheet) {
+                        throw new Error('La hoja "Packing List" no fue encontrada');
                     }
+                    
+                    const excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    extraerFardos(excelData);
+                    
+                } catch (error) {
+                    console.error('Error procesando archivo:', error);
+                    mostrarNotificacion('Error al procesar el archivo: ' + error.message, 'error');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function extraerFardos(excelData) {
+            fardosData = [];
+            const textoC6 = excelData[5]?.[2] || 'Información no disponible';
+            const textoA7 = excelData[6]?.[0] || 'Información no disponible';
+
+            let paqueteActual = '';
+            let fardoActual = null;
+
+            for (let i = 12; i < excelData.length; i++) {
+                const fila = excelData[i];
+                if (!fila || !fila[1]) continue;
+                
+                const paquete = fila[1].toString().trim();
+                const m2 = parseFloat(fila[7]) || 0;
+                const piezasRaw = (fila[4] || '').toString().split('\n').filter(p => p && p.trim());
+                const largosRaw = (fila[5] || '').toString().split('\n').filter(l => l && l.trim());
+
+                if (paquete !== paqueteActual) {
+                    paqueteActual = paquete;
+                    fardoActual = {
+                        id: paquete,
+                        numero: paquete,
+                        m2: 0,
+                        piezas: [],
+                        largos: [],
+                        textoC6,
+                        textoA7,
+                        encontrado: false,
+                        timestamp: null,
+                        totalPiezas: 0
+                    };
+                    fardosData.push(fardoActual);
+                }
+
+                if (fardoActual) {
+                    fardoActual.m2 += m2;
+                    fardoActual.piezas.push(...piezasRaw);
+                    fardoActual.largos.push(...largosRaw);
+                    fardoActual.totalPiezas = Math.max(fardoActual.piezas.length, fardoActual.largos.length);
+                }
+            }
+
+            console.log(`📦 Extraídos ${fardosData.length} fardos del archivo Excel`);
+            inicializarChecklist();
+            mostrarNotificacion(`✅ ${fardosData.length} fardos cargados correctamente`, 'success');
+        }
+
+        function inicializarChecklist() {
+            checklistData.clear();
+            
+            fardosData.forEach(fardo => {
+                if (!checklistData.has(fardo.id)) {
+                    checklistData.set(fardo.id, {
+                        ...fardo,
+                        encontrado: false,
+                        timestamp: null,
+                        estado: 'pending'
+                    });
+                }
+            });
+
+            actualizarEstadisticas();
+            renderizarLista();
+            guardarDatos();
+        }
+
+        function procesarCodigoEscaneado(codigo) {
+            if (!codigo) return;
+
+            console.log(`🔍 Código escaneado: ${codigo}`);
+            
+            if (checklistData.has(codigo)) {
+                const fardo = checklistData.get(codigo);
+                
+                if (!fardo.encontrado) {
+                    fardo.encontrado = true;
+                    fardo.timestamp = new Date();
+                    fardo.estado = 'found';
+                    
+                    mostrarNotificacion(`✅ Fardo ${codigo} encontrado`, 'success');
+                    
+                    // Efecto visual y sonoro
+                    vibrar();
+                    playSound('success');
+                    
+                } else {
+                    mostrarNotificacion(`ℹ️ Fardo ${codigo} ya había sido encontrado`, 'warning');
                 }
                 
-                // Pre-cargar el audio después de la interacción
-                if (this.beepAudio && this.audioLoaded) {
-                    this.beepAudio.load();
-                }
-            }
-        };
-        
-        // Escuchar múltiples eventos de interacción
-        ['click', 'touchstart', 'keydown'].forEach(event => {
-            document.addEventListener(event, enableAudio, { once: true });
-        });
-    }
-    
-    static createAudioInstances() {
-        // Crear el elemento de audio principal
-        this.beepAudio = new Audio();
-        this.beepAudio.preload = 'auto';
-        this.beepAudio.volume = 0.8;
-        
-        // Rutas para GitHub y local
-        const possiblePaths = [
-            // Para GitHub Pages y repositorio
-            './store-scanner-beep-90395.mp3',
-            'store-scanner-beep-90395.mp3',
-            '/store-scanner-beep-90395.mp3',
-            // Para acceso directo en GitHub (raw)
-            `${window.location.origin}${window.location.pathname.replace('index.html', '')}store-scanner-beep-90395.mp3`,
-            // Ruta relativa más específica
-            `${window.location.href.replace(/\/[^\/]*$/, '')}/store-scanner-beep-90395.mp3`
-        ];
-        
-        console.log('🔍 Rutas a probar:', possiblePaths);
-        
-        this.audioInstances = possiblePaths.map(path => {
-            const audio = new Audio(path);
-            audio.preload = 'auto';
-            audio.volume = 0.8;
-            audio.crossOrigin = "anonymous"; // Para GitHub
-            return { audio, path };
-        });
-    }
-    
-    static tryLoadAudio() {
-        console.log('🔄 Intentando cargar archivo de audio...');
-        
-        // Probar cada instancia
-        this.audioInstances.forEach((instance, index) => {
-            const { audio, path } = instance;
-            
-            audio.addEventListener('loadeddata', () => {
-                if (!this.audioLoaded) {
-                    console.log(`✅ Audio cargado exitosamente desde: ${path}`);
-                    this.beepAudio = audio;
-                    this.audioLoaded = true;
-                    this.audioElement = audio;
-                }
-            });
-            
-            audio.addEventListener('canplaythrough', () => {
-                if (!this.audioLoaded) {
-                    console.log(`✅ Audio listo para reproducir desde: ${path} - Duración: ${audio.duration}s`);
-                    this.beepAudio = audio;
-                    this.audioLoaded = true;
-                    this.audioElement = audio;
-                }
-            });
-            
-            audio.addEventListener('error', (e) => {
-                console.log(`❌ Error cargando desde ${path}:`, e);
-            });
-            
-            // Cargar el audio
-            audio.load();
-        });
-        
-        // Verificar carga después de 3 segundos
-        setTimeout(() => {
-            if (!this.audioLoaded) {
-                console.log('⚠️ Reintentando carga de audio...');
-                this.forceLoadAudio();
-            }
-        }, 3000);
-        
-        // Verificar nuevamente después de 6 segundos
-        setTimeout(() => {
-            if (!this.audioLoaded) {
-                console.error('❌ ERROR CRÍTICO: No se pudo cargar el archivo de audio después de múltiples intentos');
-                console.log('📁 Verifica que el archivo store-scanner-beep-90395.mp3 esté en la misma carpeta que index.html');
-                console.log('🌐 Asegúrate de estar ejecutando desde un servidor web, no file://');
-            }
-        }, 6000);
-    }
-    
-    static forceLoadAudio() {
-        console.log('🚀 Forzando carga de audio...');
-        
-        // Crear una nueva instancia con evento de usuario
-        const newAudio = new Audio('./store-scanner-beep-90395.mp3');
-        newAudio.volume = 0.8;
-        
-        // Intentar cargar inmediatamente
-        const loadPromise = newAudio.load();
-        
-        newAudio.addEventListener('loadeddata', () => {
-            console.log('✅ Audio forzado cargado exitosamente');
-            this.beepAudio = newAudio;
-            this.audioLoaded = true;
-            this.audioElement = newAudio;
-        });
-        
-        newAudio.addEventListener('error', (e) => {
-            console.error('❌ Error en carga forzada:', e);
-        });
-    }
-    
-    static async playBeep() {
-        console.log('🔊 Reproduciendo beep - Estado cargado:', this.audioLoaded, '- Usuario interactuó:', this.userInteracted);
-        
-        // Verificar interacción del usuario
-        if (!this.userInteracted) {
-            console.log('⚠️ Esperando interacción del usuario para reproducir audio');
-            return;
-        }
-        
-        if (!this.audioLoaded || !this.beepAudio) {
-            console.error('❌ AUDIO NO DISPONIBLE - El archivo MP3 no se ha cargado');
-            console.log('🔧 Intentando cargar audio de emergencia...');
-            
-            // Intentar crear y reproducir inmediatamente
-            const emergencyAudio = new Audio('./store-scanner-beep-90395.mp3');
-            emergencyAudio.volume = 0.8;
-            
-            try {
-                const playPromise = emergencyAudio.play();
-                if (playPromise !== undefined) {
-                    await playPromise;
-                    console.log('✅ Audio de emergencia reproducido');
-                    return;
-                }
-            } catch (e) {
-                console.error('❌ Falló audio de emergencia:', e);
-                return;
-            }
-        }
-        
-        try {
-            console.log('🎵 Reproduciendo archivo MP3 principal');
-            
-            // Resetear el audio al inicio
-            this.beepAudio.currentTime = 0;
-            
-            // Asegurar volumen
-            this.beepAudio.volume = 0.8;
-            
-            // Reproducir
-            const playPromise = this.beepAudio.play();
-            
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        console.log('✅ MP3 reproducido exitosamente');
-                    })
-                    .catch(async (e) => {
-                        console.error('❌ Error reproduciendo MP3:', e);
-                        console.log('🔄 Reintentando reproducción...');
-                        
-                        // Reintentar una vez más
-                        try {
-                            this.beepAudio.load();
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            this.beepAudio.currentTime = 0;
-                            await this.beepAudio.play();
-                            console.log('✅ MP3 reproducido en reintento');
-                        } catch (retryError) {
-                            console.error('❌ Error en reintento:', retryError);
-                        }
-                    });
+                // Scroll al elemento
+                scrollToFardo(codigo);
+                
             } else {
-                console.log('✅ MP3 reproducido (navegador antiguo)');
+                mostrarNotificacion(`❌ Fardo ${codigo} no encontrado en la lista`, 'error');
+                playSound('error');
             }
+
+            actualizarEstadisticas();
+            renderizarLista();
+            guardarDatos();
+        }
+
+        function scrollToFardo(codigo) {
+            setTimeout(() => {
+                const elemento = document.querySelector(`[data-fardo="${codigo}"]`);
+                if (elemento) {
+                    elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    elemento.style.animation = 'none';
+                    elemento.offsetHeight; // Force reflow
+                    elemento.style.animation = 'pulse 0.6s ease';
+                }
+            }, 100);
+        }
+
+        function renderizarLista() {
+            const container = document.getElementById('checklistContainer');
             
-        } catch (e) {
-            console.error('❌ Error crítico reproduciendo audio:', e);
-        }
-    }
-    
-    static playSuccessSound() {
-        console.log('🎉 Reproduciendo sonido de éxito (3 beeps)');
-        
-        // Reproducir 3 veces con intervalos
-        this.playBeep();
-        setTimeout(() => this.playBeep(), 200);
-        setTimeout(() => this.playBeep(), 400);
-    }
-    
-    static testAudio() {
-        console.log('🧪 === DIAGNÓSTICO DE AUDIO ===');
-        console.log('Estado del sistema:');
-        console.log('- audioLoaded:', this.audioLoaded);
-        console.log('- userInteracted:', this.userInteracted);
-        console.log('- beepAudio existe:', !!this.beepAudio);
-        console.log('- readyState:', this.beepAudio?.readyState);
-        console.log('- duration:', this.beepAudio?.duration);
-        console.log('- src:', this.beepAudio?.src);
-        console.log('- volume:', this.beepAudio?.volume);
-        console.log('===============================');
-        
-        if (!this.userInteracted) {
-            console.log('⚠️ NOTA: Necesitas hacer clic en la página primero para habilitar audio');
-            console.log('🖱️ Haz clic en cualquier parte de la página y luego ejecuta: SoundSystem.testAudio()');
-        } else {
-            console.log('🎵 Probando reproducción...');
-            this.playBeep();
-        }
-    }
-}
-
-// Sistema de notificaciones
-class NotificationSystem {
-    static show(type, message, duration = 5000) {
-        const alert = elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`];
-        if (!alert) return;
-
-        alert.textContent = message;
-        alert.style.display = 'block';
-
-        setTimeout(() => {
-            alert.style.display = 'none';
-        }, duration);
-
-        // Ocultar otras alertas
-        ['error', 'success', 'warning'].forEach(t => {
-            if (t !== type) {
-                elements[`alert${t.charAt(0).toUpperCase() + t.slice(1)}`].style.display = 'none';
-            }
-        });
-    }
-
-    static hide() {
-        ['error', 'success', 'warning'].forEach(type => {
-            elements[`alert${type.charAt(0).toUpperCase() + type.slice(1)}`].style.display = 'none';
-        });
-    }
-}
-
-// Sistema de métricas
-class MetricsSystem {
-    static update() {
-        const total = fardos.length;
-        const completed = fardos.filter(f => f.revisado).length;
-        const pending = total - completed;
-        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-        elements.totalCount.textContent = total;
-        elements.completedCount.textContent = completed;
-        elements.pendingCount.textContent = pending;
-        elements.progressFill.style.width = `${percentage}%`;
-        elements.progressPercentage.textContent = `${percentage}%`;
-
-        // Actualizar estado de conexión
-        elements.connectionStatus.className = systemReady ? 'connection-status' : 'connection-status offline';
-
-        // Verificar completado
-        if (total > 0 && completed === total) {
-            NotificationSystem.show('success', `🎉 ¡Excelente! Todos los ${total} paquetes han sido procesados correctamente.`);
-            this.triggerCompletionEffects();
-        }
-    }
-
-    static triggerCompletionEffects() {
-        // Vibración de éxito
-        if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200, 100, 200]);
-        }
-
-        // Sonido de éxito
-        SoundSystem.playSuccessSound();
-
-        // Efecto visual en la barra de progreso
-        elements.progressFill.style.background = 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)';
-        elements.progressFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
-    }
-}
-
-// Sistema de archivos
-class FileSystem {
-    static init() {
-        elements.fileInput.addEventListener('change', this.handleFileChange.bind(this));
-    }
-
-    static handleFileChange(event) {
-        const file = event.target.files[0];
-        const label = elements.fileLabel;
-
-        if (!file) {
-            this.resetFileInput();
-            return;
-        }
-
-        // Actualizar UI del input
-        label.classList.add('has-file');
-        label.innerHTML = `<i class="fas fa-file-excel"></i><span>${file.name}</span>`;
-
-        // Mostrar loading
-        elements.loadingSpinner.style.display = 'block';
-        NotificationSystem.show('warning', 'Procesando archivo Excel...');
-
-        // Procesar archivo
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets["Packing List"];
-
-                if (!sheet) {
-                    throw new Error('La hoja "Packing List" no fue encontrada en el archivo');
-                }
-
-                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                this.procesarDatos(rawData);
-
-            } catch (error) {
-                console.error('Error al procesar archivo:', error);
-                NotificationSystem.show('error', `❌ Error: ${error.message}`);
-                this.resetFileInput();
-            } finally {
-                elements.loadingSpinner.style.display = 'none';
-            }
-        };
-
-        reader.readAsArrayBuffer(file);
-    }
-
-    static resetFileInput() {
-        const label = elements.fileLabel;
-        label.classList.remove('has-file');
-        label.innerHTML = '<i class="fas fa-upload"></i><span>Seleccionar Archivo Excel</span>';
-        elements.fileInput.value = '';
-        elements.startButton.disabled = true;
-        systemReady = false;
-        MetricsSystem.update();
-    }
-
-    static procesarDatos(rawData) {
-        const fardosUnicos = new Set();
-
-        // Extraer paquetes únicos del archivo Excel
-        for (let i = 12; i < rawData.length; i++) {
-            const fila = rawData[i];
-            if (fila && fila[1]) {
-                fardosUnicos.add(fila[1].toString().trim());
-            }
-        }
-
-        // Convertir a array de objetos
-        fardos = Array.from(fardosUnicos).map((paquete) => ({
-            paquete: paquete,
-            revisado: false,
-            timestamp: null
-        }));
-
-        if (fardos.length > 0) {
-            NotificationSystem.show('success', `✅ Se cargaron ${fardos.length} paquetes correctamente.`);
-            elements.startButton.disabled = false;
-            systemReady = true;
-            this.renderFardosList();
-        } else {
-            NotificationSystem.show('error', '❌ No se encontraron paquetes válidos en el archivo.');
-            systemReady = false;
-        }
-
-        MetricsSystem.update();
-    }
-
-    static renderFardosList() {
-        const grid = elements.fardosGrid;
-        grid.innerHTML = '';
-
-        fardos.forEach((fardo, index) => {
-            const item = document.createElement('div');
-            item.className = 'fardo-item';
-            item.textContent = fardo.paquete;
-            item.id = `fardo-${index}`;
-
-            if (fardo.revisado) {
-                item.classList.add('completed');
-            }
-
-            grid.appendChild(item);
-        });
-    }
-}
-
-// Sistema de cámara y escáner
-class ScannerSystem {
-    static init() {
-        elements.startButton.addEventListener('click', this.handleStartScanner.bind(this));
-        
-        // Configurar controles simples
-        elements.enhanceBtn.addEventListener('click', this.enhanceCamera.bind(this));
-        elements.torchBtn.addEventListener('click', this.toggleTorch.bind(this));
-        elements.resetBtn.addEventListener('click', this.resetCamera.bind(this));
-    }
-
-    static handleStartScanner() {
-        if (!systemReady) {
-            NotificationSystem.show('warning', '⚠️ Primero debe cargar un archivo Excel con los paquetes.');
-            return;
-        }
-
-        if (!isQuaggaStarted) {
-            NotificationSystem.hide();
-            this.startQuagga();
-        } else {
-            // Detener escáner si ya está iniciado
-            this.stopScanner();
-        }
-    }
-
-    static stopScanner() {
-        Quagga.stop();
-        isQuaggaStarted = false;
-        
-        // Limpiar track de cámara
-        if (currentTrack) {
-            currentTrack.stop();
-            currentTrack = null;
-        }
-        
-        elements.startButton.innerHTML = '<i class="fas fa-camera"></i><span>Activar Escáner</span>';
-        elements.startButton.className = "btn btn-danger";
-        elements.cameraPlaceholder.style.display = "block";
-        elements.lightControls.classList.remove('show');
-        
-        // Reset visual
-        elements.cameraContainer.classList.remove('enhanced');
-        enhanced = false;
-        torchEnabled = false;
-    }
-
-    static startQuagga() {
-        // Configuración estándar que funciona bien
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: elements.cameraContainer,
-                constraints: {
-                    width: { min: 640, ideal: 1280 },
-                    height: { min: 480, ideal: 720 },
-                    facingMode: "environment"
-                }
-            },
-            decoder: {
-                readers: [
-                    "code_128_reader", 
-                    "ean_reader", 
-                    "ean_8_reader",
-                    "code_39_reader",
-                    "code_39_vin_reader",
-                    "codabar_reader",
-                    "upc_reader",
-                    "upc_e_reader"
-                ]
-            },
-            locator: {
-                patchSize: "medium",
-                halfSample: true
-            },
-            numOfWorkers: navigator.hardwareConcurrency || 4,
-            locate: true,
-            frequency: 10
-        }, (err) => {
-            if (err) {
-                console.error("Error al iniciar Quagga:", err);
-                NotificationSystem.show('error', '❌ Error al acceder a la cámara. Verifique los permisos.');
-                elements.cameraPlaceholder.style.display = "block";
+            if (fardosData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>No hay fardos cargados</h3>
+                        <p>Carga un archivo Excel o usa el ejemplo para comenzar</p>
+                    </div>
+                `;
                 return;
             }
 
-            this.setupCamera();
-        });
-    }
+            let fardosFiltrados = Array.from(checklistData.values());
 
-    static setupCamera() {
-        elements.cameraPlaceholder.style.display = "none";
-        elements.lightControls.classList.add('show');
-
-        const video = elements.cameraContainer.querySelector("video");
-        const canvas = elements.cameraContainer.querySelector("canvas");
-
-        if (video) {
-            video.style.display = "block";
-            video.style.width = "100%";
-            video.style.height = "100%";
-            video.style.objectFit = "cover";
-            
-            // Obtener el track de video
-            if (video.srcObject) {
-                currentTrack = video.srcObject.getVideoTracks()[0];
-                this.checkTorchSupport();
-            }
-        }
-        
-        if (canvas) {
-            canvas.style.display = "block";
-            canvas.style.position = "absolute";
-            canvas.style.top = "0";
-            canvas.style.left = "0";
-            canvas.style.width = "100%";
-            canvas.style.height = "100%";
-        }
-
-        Quagga.start();
-        isQuaggaStarted = true;
-
-        elements.startButton.innerHTML = '<i class="fas fa-stop"></i><span>Detener Escáner</span>';
-        elements.startButton.className = "btn btn-success";
-
-        NotificationSystem.show('success', '✅ Escáner activado. Use los botones de mejora si hay poca luz.');
-    }
-
-    static enhanceCamera() {
-        if (!enhanced) {
-            elements.cameraContainer.classList.add('enhanced');
-            elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Brillo ON';
-            elements.enhanceBtn.classList.remove('btn-warning');
-            elements.enhanceBtn.classList.add('btn-success');
-            enhanced = true;
-            NotificationSystem.show('success', '✨ Modo poca luz activado - Mejor brillo y contraste', 2000);
-        } else {
-            elements.cameraContainer.classList.remove('enhanced');
-            elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Mejorar Brillo';
-            elements.enhanceBtn.classList.remove('btn-success');
-            elements.enhanceBtn.classList.add('btn-warning');
-            enhanced = false;
-        }
-    }
-
-    static async toggleTorch() {
-        if (!currentTrack) return;
-
-        try {
-            if (!torchEnabled) {
-                await currentTrack.applyConstraints({
-                    advanced: [{ torch: true }]
+            // Aplicar filtro de estado
+            if (currentFilter !== 'all') {
+                fardosFiltrados = fardosFiltrados.filter(fardo => {
+                    switch (currentFilter) {
+                        case 'found': return fardo.encontrado;
+                        case 'pending': return !fardo.encontrado;
+                        case 'missing': return fardo.estado === 'missing';
+                        default: return true;
+                    }
                 });
-                torchEnabled = true;
-                elements.torchBtn.innerHTML = '<i class="fas fa-flashlight"></i> Flash ON';
-                elements.torchBtn.classList.remove('btn-warning');
-                elements.torchBtn.classList.add('btn-success');
-                console.log('🔦 Flash activado');
-            } else {
-                await currentTrack.applyConstraints({
-                    advanced: [{ torch: false }]
-                });
-                torchEnabled = false;
-                elements.torchBtn.innerHTML = '<i class="fas fa-flashlight"></i> Flash';
-                elements.torchBtn.classList.remove('btn-success');
-                elements.torchBtn.classList.add('btn-warning');
-                console.log('🔦 Flash desactivado');
             }
-        } catch (e) {
-            console.log('⚠️ Flash no soportado en este dispositivo');
-        }
-    }
 
-    static resetCamera() {
-        elements.cameraContainer.classList.remove('enhanced');
-        elements.enhanceBtn.innerHTML = '<i class="fas fa-sun"></i> Mejorar Brillo';
-        elements.enhanceBtn.classList.remove('btn-success');
-        elements.enhanceBtn.classList.add('btn-warning');
-        enhanced = false;
-        
-        if (torchEnabled) {
-            this.toggleTorch();
-        }
-    }
-
-    static checkTorchSupport() {
-        if (!currentTrack) return;
-        
-        try {
-            const capabilities = currentTrack.getCapabilities();
-            if (capabilities.torch) {
-                elements.torchBtn.style.display = 'block';
-                console.log('🔦 Flash soportado');
-            } else {
-                elements.torchBtn.style.display = 'none';
-                console.log('❌ Flash no soportado');
+            // Aplicar filtro de búsqueda
+            if (currentSearch) {
+                fardosFiltrados = fardosFiltrados.filter(fardo =>
+                    fardo.numero.toLowerCase().includes(currentSearch) ||
+                    fardo.id.toLowerCase().includes(currentSearch)
+                );
             }
-        } catch (e) {
-            elements.torchBtn.style.display = 'none';
-        }
-    }
 
-    static showScanNotification(message, type = 'success') {
-        const notification = elements.scanNotification;
-        notification.textContent = message;
-        notification.className = `scan-notification ${type}`;
-        notification.style.display = 'block';
+            // Ordenar: encontrados al final, pendientes primero
+            fardosFiltrados.sort((a, b) => {
+                if (a.encontrado && !b.encontrado) return 1;
+                if (!a.encontrado && b.encontrado) return -1;
+                return a.numero.localeCompare(b.numero);
+            });
 
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, type === 'warning' ? 1500 : 2000);
-    }
+            const html = fardosFiltrados.map(fardo => {
+                const statusClass = fardo.encontrado ? 'found' : 
+                                  fardo.estado === 'missing' ? 'missing' : 'pending';
+                const statusText = fardo.encontrado ? 'Encontrado' : 
+                                 fardo.estado === 'missing' ? 'Faltante' : 'Pendiente';
+                const timestampText = fardo.timestamp ? 
+                    `Encontrado: ${fardo.timestamp.toLocaleString('es-GT')}` : 
+                    'No escaneado';
 
-    static processBarcodeDetection(code) {
-        const cleanCode = code.trim();
-        console.log('Código detectado:', cleanCode);
+                return `
+                    <div class="fardo-item ${fardo.encontrado ? 'checked' : ''} ${fardo.estado === 'missing' ? 'missing' : ''}" 
+                         data-fardo="${fardo.id}">
+                        <input type="checkbox" class="checkbox" 
+                               ${fardo.encontrado ? 'checked' : ''} 
+                               onchange="toggleFardo('${fardo.id}', this.checked)">
+                        <div class="fardo-info">
+                            <h4>Fardo No. ${fardo.numero}</h4>
+                            <div class="fardo-details">
+                                ${fardo.m2.toFixed(2)} M² | ${fardo.totalPiezas} piezas
+                            </div>
+                            <div class="timestamp">${timestampText}</div>
+                        </div>
+                        <div class="fardo-status status-${statusClass}">
+                            ${statusText}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-        // Buscar el paquete en la lista
-        const fardoIndex = fardos.findIndex(f => f.paquete === cleanCode);
-
-        if (fardoIndex !== -1) {
-            const fardo = fardos[fardoIndex];
-
-            if (!fardo.revisado) {
-                // Marcar como completado
-                fardo.revisado = true;
-                fardo.timestamp = new Date();
-
-                // Actualizar UI
-                const fardoElement = document.getElementById(`fardo-${fardoIndex}`);
-                if (fardoElement) {
-                    fardoElement.classList.add('completed');
-                }
-
-                // Efectos de éxito
-                SoundSystem.playBeep();
-                this.showScanNotification(`✅ Paquete ${cleanCode} registrado correctamente`, 'success');
-
-                // Vibración
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([100]);
-                }
-
-                // Actualizar métricas
-                MetricsSystem.update();
-
-            } else {
-                // Ya fue escaneado
-                SoundSystem.playBeep();
-                this.showScanNotification(`⚠️ Paquete ${cleanCode} ya fue registrado`, 'warning');
-            }
-        } else {
-            // Paquete no encontrado
-            this.showScanNotification(`❌ Paquete ${cleanCode} no está en la lista`, 'error');
-        }
-    }
-}
-
-// Variables para evitar detecciones múltiples
-let lastDetectedCode = null;
-let lastDetectedTime = 0;
-const DETECTION_COOLDOWN = 2000; // 2 segundos entre detecciones del mismo código
-
-// Evento de detección de código de barras
-Quagga.onDetected(function(result) {
-    const code = result.codeResult.code;
-    const currentTime = Date.now();
-
-    // Evitar detecciones repetidas
-    if (code === lastDetectedCode && (currentTime - lastDetectedTime) < DETECTION_COOLDOWN) {
-        return;
-    }
-
-    lastDetectedCode = code;
-    lastDetectedTime = currentTime;
-
-    // Procesar el código detectado
-    ScannerSystem.processBarcodeDetection(code);
-});
-
-// Dibujar overlay en la cámara (versión simplificada que funciona)
-Quagga.onProcessed(function (result) {
-    const drawingCtx = Quagga.canvas.ctx.overlay;
-    const drawingCanvas = Quagga.canvas.dom.overlay;
-
-    if (!drawingCtx || !drawingCanvas) return;
-
-    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-    // Dibujar cuadro de escaneo fijo en el centro
-    const rectWidth = drawingCanvas.width * 0.7;
-    const rectHeight = drawingCanvas.height * 0.3;
-    const rectX = (drawingCanvas.width - rectWidth) / 2;
-    const rectY = (drawingCanvas.height - rectHeight) / 2;
-
-    // Cuadro principal
-    drawingCtx.lineWidth = 3;
-    drawingCtx.strokeStyle = enhanced ? '#f59e0b' : '#10b981';
-    drawingCtx.fillStyle = enhanced ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)';
-    drawingCtx.fillRect(rectX, rectY, rectWidth, rectHeight);
-    drawingCtx.strokeRect(rectX, rectY, rectWidth, rectHeight);
-
-    // Esquinas del cuadro de escaneo
-    const cornerLength = 20;
-    const cornerThickness = 4;
-    drawingCtx.lineWidth = cornerThickness;
-    drawingCtx.strokeStyle = '#ffffff';
-
-    // Esquina superior izquierda
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(rectX, rectY + cornerLength);
-    drawingCtx.lineTo(rectX, rectY);
-    drawingCtx.lineTo(rectX + cornerLength, rectY);
-    drawingCtx.stroke();
-
-    // Esquina superior derecha
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY);
-    drawingCtx.lineTo(rectX + rectWidth, rectY);
-    drawingCtx.lineTo(rectX + rectWidth, rectY + cornerLength);
-    drawingCtx.stroke();
-
-    // Esquina inferior izquierda
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(rectX, rectY + rectHeight - cornerLength);
-    drawingCtx.lineTo(rectX, rectY + rectHeight);
-    drawingCtx.lineTo(rectX + cornerLength, rectY + rectHeight);
-    drawingCtx.stroke();
-
-    // Esquina inferior derecha
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(rectX + rectWidth - cornerLength, rectY + rectHeight);
-    drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight);
-    drawingCtx.lineTo(rectX + rectWidth, rectY + rectHeight - cornerLength);
-    drawingCtx.stroke();
-
-    // Texto de instrucción
-    drawingCtx.fillStyle = '#ffffff';
-    drawingCtx.font = '16px Arial';
-    drawingCtx.textAlign = 'center';
-    drawingCtx.fillText('Coloque el código de barras dentro del marco', 
-                       drawingCanvas.width / 2, rectY - 10);
-
-    // Dibujar códigos detectados
-    if (result) {
-        if (result.boxes) {
-            result.boxes
-                .filter((box) => box !== result.box)
-                .forEach((box) => {
-                    drawingCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-                    drawingCtx.lineWidth = 2;
-                    drawingCtx.beginPath();
-                    box.forEach((point, index) => {
-                        if (index === 0) {
-                            drawingCtx.moveTo(point[0], point[1]);
-                        } else {
-                            drawingCtx.lineTo(point[0], point[1]);
-                        }
-                    });
-                    drawingCtx.closePath();
-                    drawingCtx.stroke();
-                });
+            container.innerHTML = html;
         }
 
-        if (result.box) {
-            drawingCtx.strokeStyle = "#00ff00";
-            drawingCtx.lineWidth = 3;
-            drawingCtx.beginPath();
-            result.box.forEach((point, index) => {
-                if (index === 0) {
-                    drawingCtx.moveTo(point[0], point[1]);
+        function toggleFardo(id, checked) {
+            if (checklistData.has(id)) {
+                const fardo = checklistData.get(id);
+                fardo.encontrado = checked;
+                fardo.timestamp = checked ? new Date() : null;
+                fardo.estado = checked ? 'found' : 'pending';
+
+                if (checked) {
+                    mostrarNotificacion(`✅ Fardo ${id} marcado como encontrado`, 'success');
+                    playSound('success');
                 } else {
-                    drawingCtx.lineTo(point[0], point[1]);
+                    mostrarNotificacion(`ℹ️ Fardo ${id} desmarcado`, 'warning');
                 }
-            });
-            drawingCtx.closePath();
-            drawingCtx.stroke();
+
+                actualizarEstadisticas();
+                renderizarLista();
+                guardarDatos();
+            }
         }
 
-        if (result.codeResult && result.codeResult.code) {
-            drawingCtx.fillStyle = "#00ff00";
-            drawingCtx.font = "bold 16px Arial";
-            drawingCtx.textAlign = "left";
-            drawingCtx.fillText(result.codeResult.code, 10, 30);
+        function actualizarEstadisticas() {
+            const total = checklistData.size;
+            const encontrados = Array.from(checklistData.values()).filter(f => f.encontrado).length;
+            const pendientes = total - encontrados;
+            const porcentaje = total > 0 ? Math.round((encontrados / total) * 100) : 0;
+
+            document.getElementById('totalFardos').textContent = total;
+            document.getElementById('fardosEncontrados').textContent = encontrados;
+            document.getElementById('fardosPendientes').textContent = pendientes;
+            document.getElementById('porcentajeCompleto').textContent = `${porcentaje}%`;
+
+            // Actualizar barra de progreso
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = `${porcentaje}%`;
+            progressFill.textContent = `${porcentaje}%`;
+            
+            if (total === 0) {
+                progressText.textContent = 'Carga un archivo Excel para comenzar';
+            } else if (porcentaje === 100) {
+                progressText.textContent = '🎉 ¡Todos los fardos han sido encontrados!';
+            } else {
+                progressText.textContent = `${encontrados} de ${total} fardos completados`;
+            }
         }
-    }
-});
 
-// Inicialización del sistema
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando KALAF SOFT System v2.1.1...');
-        
-    // Verificar disponibilidad de APIs necesarias
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        NotificationSystem.show('error', '❌ Tu navegador no soporta acceso a cámara. Usa Chrome o Firefox moderno.');
-        return;
-    }
+        function cargarEjemplo() {
+            // Datos de ejemplo
+            fardosData = [
+                {
+                    id: 'F001',
+                    numero: 'F001',
+                    m2: 15.50,
+                    piezas: ['1', '2', '3', '4'],
+                    largos: ['2.40', '2.40', '2.20', '2.20'],
+                    textoC6: 'Madera de Pino - Ejemplo',
+                    textoA7: 'Exportación Guatemala',
+                    encontrado: false,
+                    timestamp: null,
+                    totalPiezas: 4
+                },
+                {
+                    id: 'F002',
+                    numero: 'F002',
+                    m2: 18.75,
+                    piezas: ['1', '2', '3', '4', '5'],
+                    largos: ['2.40', '2.40', '2.40', '2.20', '2.20'],
+                    textoC6: 'Madera de Pino - Ejemplo',
+                    textoA7: 'Exportación Guatemala',
+                    encontrado: false,
+                    timestamp: null,
+                    totalPiezas: 5
+                },
+                {
+                    id: 'F003',
+                    numero: 'F003',
+                    m2: 12.30,
+                    piezas: ['1', '2', '3'],
+                    largos: ['2.40', '2.20', '2.20'],
+                    textoC6: 'Madera de Pino - Ejemplo',
+                    textoA7: 'Exportación Guatemala',
+                    encontrado: false,
+                    timestamp: null,
+                    totalPiezas: 3
+                }
+            ];
 
-    // Inicializar módulos
-    SoundSystem.init();
-    FileSystem.init();
-    ScannerSystem.init();
-    MetricsSystem.update();
+            inicializarChecklist();
+            mostrarNotificacion('✅ Datos de ejemplo cargados correctamente', 'success');
+        }
 
-    console.log('Sistema inicializado correctamente');
-    NotificationSystem.show('success', '✅ Sistema KALAF SOFT listo. Carga un archivo Excel para comenzar.', 3000);
-});
+        function limpiarTodo() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los datos?')) {
+                fardosData = [];
+                checklistData.clear();
+                currentFilter = 'all';
+                currentSearch = '';
+                
+                document.getElementById('searchInput').value = '';
+                document.getElementById('filterStatus').value = 'all';
+                
+                actualizarEstadisticas();
+                renderizarLista();
+                limpiarDatosGuardados();
+                mostrarNotificacion('🗑️ Todos los datos han sido limpiados', 'warning');
+            }
+        }
 
-// Manejo de errores globales
-window.addEventListener('error', function(e) {
-    console.error('Error global:', e.error);
-    NotificationSystem.show('error', '❌ Se produjo un error en el sistema. Recarga la página si persiste.');
-});
+        function marcarFaltantes() {
+            if (confirm('¿Marcar todos los fardos pendientes como faltantes?')) {
+                let marcados = 0;
+                checklistData.forEach(fardo => {
+                    if (!fardo.encontrado && fardo.estado !== 'missing') {
+                        fardo.estado = 'missing';
+                        marcados++;
+                    }
+                });
 
-// Manejo de permisos de cámara
-navigator.permissions?.query({name: 'camera'}).then(function(result) {
-    console.log('Estado de permisos de cámara:', result.state);
-    if (result.state === 'denied') {
-        NotificationSystem.show('warning', '⚠️ Los permisos de cámara están denegados. Habilítalos en la configuración del navegador.');
-    }
-});
+                if (marcados > 0) {
+                    mostrarNotificacion(`⚠️ ${marcados} fardos marcados como faltantes`, 'warning');
+                    renderizarLista();
+                    guardarDatos();
+                } else {
+                    mostrarNotificacion('No hay fardos pendientes para marcar', 'warning');
+                }
+            }
+        }
 
-// Optimizaciones de rendimiento
-if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-        console.log('Optimizaciones de rendimiento aplicadas');
-    });
-}
+        function mostrarReporte() {
+            const modal = document.getElementById('reportModal');
+            const content = document.getElementById('reportContent');
+            
+            const total = checklistData.size;
+            const encontrados = Array.from(checklistData.values()).filter(f => f.encontrado).length;
+            const faltantes = Array.from(checklistData.values()).filter(f => f.estado === 'missing').length;
+            const pendientes = total - encontrados - faltantes;
+            
+            const porcentaje = total > 0 ? ((encontrados / total) * 100).toFixed(1) : 0;
+            
+            const fardosFaltantes = Array.from(checklistData.values())
+                .filter(f => f.estado === 'missing')
+                .map(f => `<li>Fardo ${f.numero} - ${f.m2.toFixed(2)} M²</li>`)
+                .join('');
 
-// Prevenir zoom en dispositivos móviles
-document.addEventListener('touchstart', function(event) {
-    if (event.touches.length > 1) {
-        event.preventDefault();
-    }
-});
+            const fardosEncontrados = Array.from(checklistData.values())
+                .filter(f => f.encontrado)
+                .map(f => `<li>Fardo ${f.numero} - ${f.timestamp?.toLocaleString('es-GT') || 'Sin fecha'}</li>`)
+                .join('');
 
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(event) {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
-    }
-    lastTouchEnd = now;
-}, false);
-</script>
+            content.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3>📊 Estadísticas Generales</h3>
+                    <p><strong>Total de fardos:</strong> ${total}</p>
+                    <p><strong>Encontrados:</strong> ${encontrados} (${porcentaje}%)</p>
+                    <p><strong>Pendientes:</strong> ${pendientes}</p>
+                    <p><strong>Marcados como faltantes:</strong> ${faltantes}</p>
+                </div>
+                
+                ${faltantes > 0 ? `
+                <div style="margin-bottom: 20px;">
+                    <h3>⚠️ Fardos Faltantes</h3>
+                    <ul style="max-height: 200px; overflow-y: auto;">
+                        ${fardosFaltantes}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                ${encontrados > 0 ? `
+                <div style="margin-bottom: 20px;">
+                    <h3>✅ Fardos Encontrados</h3>
+                    <ul style="max-height: 200px; overflow-y: auto;">
+                        ${fardosEncontrados}
+                    </ul>
+                </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <small>Reporte generado: ${new Date().toLocaleString('es-GT')}</small>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function cerrarModal() {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('reportModal');
+            if (e.target === modal) {
+                cerrarModal();
+            }
+        });
+
+        function exportarExcel() {
+            if (checklistData.size === 0) {
+                mostrarNotificacion('No hay datos para exportar', 'warning');
+                return;
+            }
+
+            const datos = Array.from(checklistData.values()).map(fardo => ({
+                'Número de Fardo': fardo.numero,
+                'M² Total': fardo.m2.toFixed(2),
+                'Total Piezas': fardo.totalPiezas,
+                'Estado': fardo.encontrado ? 'Encontrado' : (fardo.estado === 'missing' ? 'Faltante' : 'Pendiente'),
+                'Fecha Encontrado': fardo.timestamp ? fardo.timestamp.toLocaleString('es-GT') : 'No escaneado',
+                'Piezas': fardo.piezas.join(', '),
+                'Largos': fardo.largos.join(', ')
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(datos);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Checklist Fardos');
+
+            const fecha = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Checklist_Fardos_${fecha}.xlsx`);
+            
+            mostrarNotificacion('📊 Archivo Excel exportado correctamente', 'success');
+        }
+
+        function exportarPDF() {
+            if (checklistData.size === 0) {
+                mostrarNotificacion('No hay datos para exportar', 'warning');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Configuración inicial
+                doc.setFontSize(16);
+                doc.text('📦 Checklist de Fardos - Reporte', 20, 20);
+                
+                doc.setFontSize(10);
+                doc.text(`Generado: ${new Date().toLocaleString('es-GT')}`, 20, 30);
+                
+                // Estadísticas
+                const total = checklistData.size;
+                const encontrados = Array.from(checklistData.values()).filter(f => f.encontrado).length;
+                const porcentaje = total > 0 ? ((encontrados / total) * 100).toFixed(1) : 0;
+                
+                doc.text(`Total: ${total} | Encontrados: ${encontrados} (${porcentaje}%) | Pendientes: ${total - encontrados}`, 20, 40);
+                
+                // Lista de fardos
+                let y = 55;
+                doc.setFontSize(8);
+                
+                Array.from(checklistData.values()).forEach(fardo => {
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    
+                    const estado = fardo.encontrado ? '✓' : (fardo.estado === 'missing' ? '✗' : '○');
+                    const texto = `${estado} ${fardo.numero} - ${fardo.m2.toFixed(2)} M² - ${fardo.totalPiezas} pcs`;
+                    doc.text(texto, 20, y);
+                    y += 6;
+                });
+                
+                const fecha = new Date().toISOString().split('T')[0];
+                doc.save(`Checklist_Fardos_${fecha}.pdf`);
+                
+                mostrarNotificacion('📄 Archivo PDF exportado correctamente', 'success');
+            } catch (error) {
+                console.error('Error al exportar PDF:', error);
+                mostrarNotificacion('Error al exportar PDF', 'error');
+            }
+        }
+
+        function exportarFaltantes() {
+            const faltantes = Array.from(checklistData.values()).filter(f => !f.encontrado);
+            
+            if (faltantes.length === 0) {
+                mostrarNotificacion('No hay fardos faltantes para exportar', 'warning');
+                return;
+            }
+
+            const datos = faltantes.map(fardo => ({
+                'Número de Fardo': fardo.numero,
+                'M² Total': fardo.m2.toFixed(2),
+                'Total Piezas': fardo.totalPiezas,
+                'Estado': fardo.estado === 'missing' ? 'Faltante' : 'Pendiente',
+                'Piezas': fardo.piezas.join(', '),
+                'Largos': fardo.largos.join(', ')
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(datos);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Fardos Faltantes');
+
+            const fecha = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Fardos_Faltantes_${fecha}.xlsx`);
+            
+            mostrarNotificacion(`⚠️ ${faltantes.length} fardos faltantes exportados`, 'success');
+        }
+
+        // Funciones de utilidad
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            // Remover notificaciones anteriores
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${tipo}`;
+            notification.textContent = mensaje;
+            document.body.appendChild(notification);
+
+            // Auto-remover después de 4 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 4000);
+        }
+
+        function playSound(tipo) {
+            try {
+                // Crear contexto de audio si no existe
+                if (!window.audioContext) {
+                    window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const ctx = window.audioContext;
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                if (tipo === 'success') {
+                    // Sonido de éxito: Do - Mi - Sol
+                    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // Do
+                    oscillator.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // Mi
+                    oscillator.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // Sol
+                } else {
+                    // Sonido de error: frecuencia baja
+                    oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+                }
+                
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.3);
+            } catch (error) {
+                console.log('Audio no disponible:', error);
+            }
+        }
+
+        function vibrar() {
+            try {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            } catch (error) {
+                console.log('Vibración no disponible:', error);
+            }
+        }
+
+        // Funciones de persistencia de datos
+        function guardarDatos() {
+            try {
+                const datos = {
+                    fardosData: fardosData,
+                    checklistData: Array.from(checklistData.entries()),
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Simular guardado (en una aplicación real, esto iría a una base de datos)
+                window.datosGuardados = datos;
+                console.log('✅ Datos guardados en memoria');
+            } catch (error) {
+                console.error('Error al guardar datos:', error);
+            }
+        }
+
+        function cargarDatosGuardados() {
+            try {
+                if (window.datosGuardados) {
+                    const datos = window.datosGuardados;
+                    fardosData = datos.fardosData || [];
+                    checklistData = new Map(datos.checklistData || []);
+                    
+                    // Reconstruir objetos Date
+                    checklistData.forEach(fardo => {
+                        if (fardo.timestamp && typeof fardo.timestamp === 'string') {
+                            fardo.timestamp = new Date(fardo.timestamp);
+                        }
+                    });
+                    
+                    actualizarEstadisticas();
+                    renderizarLista();
+                    console.log('✅ Datos cargados desde memoria');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+            }
+        }
+
+        function limpiarDatosGuardados() {
+            try {
+                delete window.datosGuardados;
+                console.log('🗑️ Datos eliminados de memoria');
+            } catch (error) {
+                console.error('Error al limpiar datos:', error);
+            }
+        }
+
+        // Atajos de teclado
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + K para enfocar el campo de búsqueda
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+            
+            // Escape para limpiar búsqueda y cerrar modales
+            if (e.key === 'Escape') {
+                document.getElementById('searchInput').value = '';
+                currentSearch = '';
+                renderizarLista();
+                cerrarModal();
+            }
+            
+            // F5 para enfocar el escáner
+            if (e.key === 'F5') {
+                e.preventDefault();
+                document.getElementById('barcodeInput').focus();
+            }
+        });
+
+        // Auto-enfoque del campo de escáner al cargar la página
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('barcodeInput').focus();
+            }, 500);
+        });
+
+        console.log('📦 Sistema de Checklist de Fardos v2.0 - Listo para usar');
+    </script>
 </body>
 </html>
